@@ -1,0 +1,23 @@
+Revision history for Perl extension App::Office::Contacts.
+
+1.02  Fri Jan 29 09:52:00 2010
+	- Change namespace from CGI::Office::* to App::Office::* after discussion with Matt Trout.
+	- Add config item css_url.
+	- Tell Module::Build to install .htoffice.contacts.conf.
+
+1.01  Thu Jan  7 15:39:00 2010
+	- Add MANIFEST and MYMETA.yml
+
+1.00  Thu Dec 31 10:48:00 2009
+	- Rename from Local::Contacts.
+	- Remove Apache-specific code.
+	- Split into N controllers, using CGI::Application::Dispatch.
+	- Split into separate distros:
+		o App::Office::Contacts
+		o App::Office::Contacts::Donations
+		o App::Office::Contacts::Export::StickyLabels
+		o App::Office::Contacts::Import::vCards
+		o App::Office::Contacts::Sites
+
+0.99  Thu Mar 06 11:30:45 2008
+	  - Original version.
