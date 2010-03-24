@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::View::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -58,7 +58,7 @@ sub build_add_organization_js
 	my($js) = $self -> load_tmpl('update.organization.js');
 
 	$js -> param(context     => 'add');
-	$js -> param(form_action => ${$self -> config}{'form_action'});
+	$js -> param(form_action => $self -> script_name);
 
 	return $js -> output;
 
@@ -159,7 +159,7 @@ sub build_update_organization_js
 	my($js) = $self -> load_tmpl('update.organization.js');
 
 	$js -> param(context     => 'update');
-	$js -> param(form_action => ${$self -> config}{'form_action'});
+	$js -> param(form_action => $self -> script_name);
 
 	return $js -> output;
 
@@ -301,6 +301,6 @@ sub report_update
 
 # -----------------------------------------------
 
-no Moose;__PACKAGE__ -> meta -> make_immutable;
+__PACKAGE__ -> meta -> make_immutable;
 
 1;

@@ -1,7 +1,6 @@
 package App::Office::Contacts::Controller::Exporter::Notes;
 
-use strict;
-use warnings;
+use common::sense;
 
 use App::Office::Contacts::Util::Validator;
 
@@ -18,7 +17,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -27,6 +26,8 @@ sub add
 	my($self) = @_;
 
 	$self -> log(debug => 'Entered add');
+
+	return if ($self -> validate_post == 0);
 
 	my($id)          = $self -> query -> param('target_id');
 	my($type)        = $self -> param('id');
@@ -64,6 +65,8 @@ sub delete
 
 	$self -> log(debug => 'Entered delete');
 
+	return if ($self -> validate_post == 0);
+
 	my($id)          = $self -> query -> param('target_id');
 	my($type)        = $self -> param('id');
 	my($method_name) = "get_${type}_via_id";
@@ -88,6 +91,8 @@ sub display
 	my($self, $report) = @_;
 
 	$self -> log(debug => 'Entered display');
+
+	return if ($self -> validate_post == 0);
 
 	my($id)     = $self -> query -> param('target_id');
 	my($type)   = $self -> param('id');

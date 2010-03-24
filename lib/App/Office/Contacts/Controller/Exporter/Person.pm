@@ -1,7 +1,6 @@
 package App::Office::Contacts::Controller::Exporter::Person;
 
-use strict;
-use warnings;
+use common::sense;
 
 use App::Office::Contacts::Util::Validator;
 
@@ -20,7 +19,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -29,6 +28,8 @@ sub add
 	my($self) = @_;
 
 	$self -> log(debug => 'Entered add');
+
+	return if ($self -> validate_post == 0);
 
 	my($result) = App::Office::Contacts::Util::Validator -> new
 	(
@@ -91,6 +92,8 @@ sub display
 
 	$self -> log(debug => 'Entered display');
 
+	return if ($self -> validate_post == 0);
+
 	my($id)     = $self -> query -> param('target_id');
 	my($person) = $self -> param('db') -> person -> get_person($self -> param('user_id'), $id);
 	my($result) = "No person has the requested id. (Hint: Run another search)";
@@ -132,6 +135,8 @@ sub update
 	my($self) = @_;
 
 	$self -> log(debug => 'Entered update');
+
+	return if ($self -> validate_post == 0);
 
 	my($id)          = $self -> query -> param('target_id');
 	my($action)      = $self -> query -> param('submit_person_delete') || 'Update';

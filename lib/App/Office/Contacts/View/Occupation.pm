@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::View::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -16,7 +16,7 @@ sub build_add_occupation_template
 
 	$self -> log(debug => 'Entered build_occupation_template');
 
-	my($form_action) = ${$self -> config}{'form_action'};
+	my($form_action) = $self -> script_name;
 
 	# Phase 1: Occupation autocomplete.
 

@@ -1,16 +1,19 @@
 package App::Office::Contacts;
 
-use base 'CGI::Application';
-use strict;
-use warnings;
+use parent 'CGI::Application';
+use common::sense;
 
 use CGI::Session;
+
+use Data::UUID;
+
+use Digest::SHA;
 
 use Log::Dispatch::DBI;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -118,18 +121,22 @@ tab_set.appendTo("container");
 
 inner_tab_set.appendTo("add_tab");
 
-// The calendars are ignored for Contacts, since the divs they
-// appear in for Donations are not in the template report.tmpl.
+make_search_name_focus();
+
 // Sigh: The calendars default to not having a current date.
 
-var today = new Date();
-today = today.toLocaleDateString();
-from_calendar = new YAHOO.widget.Calendar("from_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
-from_calendar.render();
-to_calendar = new YAHOO.widget.Calendar("to_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
-to_calendar.render();
+var calendar_element = YAHOO.util.Dom.get("from_calendar_div");
 
-make_search_name_focus();
+if (calendar_element !== null)
+{
+	var today = new Date();
+	today = today.toLocaleDateString();
+	from_calendar = new YAHOO.widget.Calendar("from_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
+	from_calendar.render();
+	to_calendar = new YAHOO.widget.Calendar("to_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
+	to_calendar.render();
+}
+
 EJS
 
 	return $head_init;
@@ -147,7 +154,7 @@ sub build_search_tab
 	my($search_js)   = $self -> load_tmpl('search.js');
 	my($search_html) = $self -> load_tmpl('search.tmpl');
 
-	$search_js -> param(form_action => ${$self -> param('config')}{'form_action'});
+	$search_js -> param(form_action => $self -> script_name);
 	$search_js -> param(sid         => $self -> param('session') -> id);
 	$search_html -> param(sid       => $self -> param('session') -> id);
 
@@ -168,6 +175,8 @@ sub display
 
 	$self -> log(debug => 'Entered display');
 
+	return if ($self -> validate_post == 0);
+
 	# Generate the web page itself. This is not loaded by sub cgiapp_init(),
 	# because, with AJAX, we only need it the first time the script is run.
 
@@ -179,9 +188,51 @@ sub display
 	$page -> param(head_js   => $self -> build_head_js($search_tab[0]) );
 	$page -> param(yui_url   => ${$self -> param('config')}{'yui_url'});
 
+	$self -> generate_cookie;
+
 	return $page -> output;
 
 } # End of display.
+
+# -----------------------------------------------
+
+sub generate_cookie
+{
+	my($self) = @_;
+
+	$self -> log(debug => 'Entered generate_cookie');
+
+	# Ensure the Initialize run mode outputs a cookie.
+
+	if ($self -> param('app') eq '')
+	{
+		my($cookie) = $self -> query -> cookie(-name => 'digest', -value => $self -> generate_digest);
+
+		$self -> header_add(-cookie => $cookie);
+	}
+
+} # End of generate_cookie.
+
+# -----------------------------------------------
+
+sub generate_digest
+{
+	my($self)   = @_;
+	my($digest) = Digest::SHA -> new(256);
+	my($uuid)   = Data::UUID -> new -> create_str;
+
+	$digest -> add($uuid);
+
+	$digest = $digest -> hexdigest;
+
+	$self -> log(debug => "UUID:   $uuid");
+	$self -> log(debug => "Digest: $digest");
+
+	$self -> param('session') -> param(digest => $digest);
+
+	return $digest;
+
+} # End of generate_digest.
 
 # -----------------------------------------------
 
@@ -218,7 +269,8 @@ sub global_prerun
 
 	$self -> log(info => '');
 	$self -> log(info => $q -> url(-full => 1, -path => 1) );
-	$self -> log(info => "Param: $_: " . $q -> param($_) ) for $q -> param;
+	$self -> log(debug => 'Request method: ' . $q -> request_method);
+	$self -> log(debug => "Param: $_: " . $q -> param($_) ) for $q -> param;
 
 	# Set up the session.
 
@@ -237,7 +289,7 @@ sub global_prerun
 	) );
 
 	$self -> log(info => 'Session id: ' . $self -> param('session') -> id);
- 	$self -> log(info => 'tmpl_path: ' . $self -> tmpl_path);
+ 	$self -> log(debug => 'tmpl_path: ' . $self -> tmpl_path);
 
 }	# End of global_prerun.
 
@@ -249,23 +301,46 @@ sub global_prerun
 sub log
 {
 	my($self, $level, $s) = @_;
+	$level ||= 'info';
 
-	if ($self -> param('logger'))
+	if ($s)
 	{
-		if ($s)
-		{
-			$s = (caller)[0] . ". $s";
-			$s =~ s/^App::Office::Contacts/\*/;
-		}
-		else
-		{
-			$s = '';
-		}
-
-		$self -> param('logger') -> log(level => $level, message => $s);
+		$s = (caller)[0] . ". $s";
+		$s =~ s/^App::Office::Contacts/\*/;
 	}
 
+	$self -> param('logger') -> $level($s || '');
+
 } # End of log.
+
+# -----------------------------------------------
+
+sub script_name
+{
+	my($self) = @_;
+
+	my($env);
+	my($script_name);
+
+	# Are we running under Plack?
+
+	if ($env = $self -> query -> can('env') )
+	{
+		# Yes.
+
+		$env         = $self -> query -> env;
+		$script_name = $$env{SCRIPT_NAME};
+	}
+	else
+	{
+		# No.
+
+		$script_name = $ENV{SCRIPT_NAME};
+	}
+
+	return $script_name;
+
+} # End of script_name.
 
 # -----------------------------------------------
 
@@ -278,6 +353,55 @@ sub teardown
 } # End of teardown.
 
 # -----------------------------------------------
+# http://www.freedom-to-tinker.com/blog/wzeller/popular-websites-vulnerable-cross-site-request-forgery-attacks
+
+sub validate_post
+{
+	my($self)  = @_;
+	my($q)     = $self -> query;
+	my(@p)     = $q -> param;
+	my($valid) = 1; # Valid.
+
+	$self -> log(debug => 'Entered validate_post');
+
+	# Ensure CGI params are only submitted with POST requests.
+
+	if ( ($#p >= 0) && ($q -> request_method ne 'POST') )
+	{
+		$self -> log(warning => 'Request method not POST but CGI parameters (i.e. ' . join(', ', @p) . ') present');
+
+		$valid = 0; # Invalid.
+	}
+
+	# Ensure the digest param matches the cookie.
+
+	if ($valid && ($#p >= 0) )
+	{
+		my($cookie_digest)  = $q -> cookie('digest');
+		my($session_digest) = $self -> param('session') -> param('digest');
+
+		if ($cookie_digest ne $session_digest)
+		{
+			$self -> log(warning => 'Cookie digest does not match session digest');
+			$self -> log(warning => "Cookie:  $cookie_digest");
+			$self -> log(warning => "Session: $session_digest");
+
+			$valid = 0; # Invalid.
+		}
+	}
+
+	if ($valid == 0)
+	{
+		$self -> log(warning => 'Redirecting to ' . $q -> url);
+		$self -> header_type('redirect');
+		$self -> header_props(-url => $q -> url);
+	}
+
+	return $valid;
+
+} # End of validate_post.
+
+# -----------------------------------------------
 
 1;
 
@@ -287,7 +411,7 @@ C<App::Office::Contacts> - A web-based contacts manager
 
 =head1 Synopsis
 
-The scripts discussed here, I<contacts.cgi> and I<contacts>, are shipped with this module.
+The scripts discussed here, I<contacts.cgi> and I<contacts.psgi>, are shipped with this module.
 
 A classic CGI script, I<contacts.cgi>:
 
@@ -313,41 +437,39 @@ A classic CGI script, I<contacts.cgi>:
 		],
 	);
 
-A fancy FCGI script, I<contacts>:
+A L<Plack> script, I<contacts.psgi>:
+
+	#!/usr/bin/perl
 
 	use strict;
 	use warnings;
 
-	use CGI::Application::Dispatch;
-	use CGI::Fast;
-	use FCGI::ProcManager;
+	use CGI::Application::Dispatch::PSGI;
+
+	use Plack::Builder;
 
 	# ---------------------
 
-	my($proc_manager) = FCGI::ProcManager -> new({processes => 2});
+	my($app) = CGI::Application::Dispatch -> as_psgi
+	(
+		prefix => 'App::Office::Contacts::Controller',
+		table  =>
+		[
+		''              => {app => 'Initialize', rm => 'display'},
+		':app'          => {rm => 'display'},
+		':app/:rm/:id?' => {},
+		],
+	);
 
-	$proc_manager -> pm_manage;
+	builder
+{
+		enable "Plack::Middleware::Static",
+		path => qr!^/(assets|yui)/!,
+		root => '/var/www';
+		$app;
+	};
 
-	my($cgi);
-
-	while ($cgi = CGI::Fast -> new)
-	{
-		$proc_manager -> pm_pre_dispatch();
-
-		CGI::Application::Dispatch -> dispatch
-		(
-		 args_to_new => {QUERY => $cgi},
-		 prefix      => 'App::Office::Contacts::Controller',
-		 table       =>
-		 [
-		  ''              => {app => 'Initialize', rm => 'display'},
-		  ':app'          => {rm => 'display'},
-		  ':app/:rm/:id?' => {},
-		 ],
-		);
-
-		$proc_manager -> pm_post_dispatch;
-	}
+For more on Plack, see L<My intro to Plack|http://savage.net.au/Perl/html/plack.for.beginners.html>.
 
 =head1 Description
 
@@ -422,13 +544,9 @@ Then, to view the database after using the shipped Perl scripts to create and po
 	psql>...
 
 If you use another server, patch lib/CGI/Office/Contacts/.htoffice.contacts.conf,
-around lines 22 and 46, where it specifies the database DSN and the CGI::Session driver.
+around lines 22 and 36, where it specifies the database DSN and the CGI::Session driver.
 
 =head1 Installing the module
-
-Note: Neither I<Build.PL> nor I<Makefile.PL> refer to C<FCGI::ProcManager>.
-If you are only going to use the classic CGI script 'contacts.cgi',
-you don't need C<FCGI::ProcManager>.
 
 Install C<App::Office::Contacts> as you would for any C<Perl> module:
 
@@ -448,7 +566,7 @@ or:
 	make test
 	make install
 
-Either way, you'll need to install all the other files which are shipped in the distro.
+Either way, you need to install all the other files which are shipped in the distro.
 
 =head2 Install the C<HTML::Template> files.
 
@@ -465,12 +583,12 @@ In lib/CGI/Office/Contacts/.htoffice.contacts.conf there is a line:
 This page is displayed when the user clicks FAQ on the About tab.
 
 A sample page is shipped in docs/html/contacts.faq.html. It has been built from
-docs/pod/contacts.faq.pod. See: http://savage.net.au/Perl.html#fancy_pom2_pl
+docs/pod/contacts.faq.pod.
 
 So, copy the latter into your web server's doc root, or generate another version
 of the page, using docs/pod/contacts.faq.pod as input.
 
-=head2 Install the trivial CGI script
+=head2 Install the trivial CGI script and the L<Plack> script
 
 Copy the distro's httpd/cgi-bin/office/ directory to your web server's cgi-bin/ directory,
 and make I<contacts.cgi> executable.
@@ -478,52 +596,6 @@ and make I<contacts.cgi> executable.
 My cgi-bin/ dir is /usr/lib/cgi-bin/, so I end up with /usr/lib/cgi-bin/office/contacts.cgi.
 
 Now I can run http://127.0.0.1/cgi-bin/office/contacts.cgi (but not yet!).
-
-=head2 Install the fancy FCGI script (optional)
-
-Copy the distro's htdocs/office/ directory to your web server's doc root,
-and make I<contacts> executable.
-
-So, I end up with /var/www/office/contacts.
-
-Now I can run http://127.0.0.1/office/contacts (but not yet!).
-
-For C<FCGID>, see http://fastcgi.coremail.cn/.
-
-C<FCGID> is a replacement for the older C<FastCGI>. For C<FastCGI>, see http://www.fastcgi.com/drupal/.
-
-=head2 Configure Apache
-
-Then, configure C<Apache> to use /office/contacts.
-
-install mod_fcgid and then add these to C<Apache>'s httpd.conf.
-
-Put the LoadModule statment alongside the pre-existing LoadModule statements.
-
-	LoadModule fcgid_module modules/mod_fcgid.so
-
-and, somewhere suitable:
-
-	<Location /office>
-		SetHandler fcgid-script
-		Options ExecCGI
-		Order deny,allow
-		Deny from all
-		Allow from 127.0.0.1
-	</Location>
-
-Note: I put this container after the <IfModule cgid_module> container.
-
-Note: My use of '/office' is not mandatory; you could use something else there. Just remember
-to rename the directory htdocs/office to htdocs/some_other_name to match.
-
-And, if you do change that, you'll need to change lib/CGI/Office/Contacts/.htoffice.contacts.conf,
-at around line 17, where the CGI form's form_action is specified.
-
-Under Debian, httpd.conf is really /etc/apache2/sites-enabled/000-default,
-and you use a2enmod to convert fcgi from available to enabled.
-
-Lastly, don't forget to restart C<Apache> after editing httpd.conf.
 
 =head2 Creating and populating the database
 
@@ -561,8 +633,7 @@ formally installed, and then the code will look in the same place for .htoffice.
 
 =head2 Start testing
 
-Point your broswer at http://127.0.0.1/cgi-bin/contacts.cgi (trivial script), or
-http://127.0.0.1/office/contacts (fancy script).
+Point your broswer at http://127.0.0.1/cgi-bin/contacts.cgi.
 
 Your first search can then be just 'a', without the quotes.
 
@@ -916,8 +987,7 @@ Home page: http://savage.net.au/index.html
 
 =head1 Copyright
 
-Australian copyright (c) 2009, Ron Savage. All rights reserved.
-
+Australian copyright (c) 2009, Ron Savage.
 	All Programs of mine are 'OSI Certified Open Source Software';
 	you can redistribute them and/or modify them under the terms of
 	The Artistic License, a copy of which is available at:

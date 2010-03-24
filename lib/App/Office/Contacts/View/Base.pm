@@ -10,13 +10,13 @@ use Moose;
 
 extends 'App::Office::Contacts::Database::Base';
 
-has config    => (is => 'ro', isa => 'HashRef', required => 1);
-has session   => (is => 'ro', isa => 'CGI::Session', required => 1);
-has tmpl_path => (is => 'ro', isa => 'Str', required => 1);
+has script_name => (is => 'ro', isa => 'Str', required => 1);
+has session     => (is => 'ro', isa => 'CGI::Session', required => 1);
+has tmpl_path   => (is => 'ro', isa => 'Str', required => 1);
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 

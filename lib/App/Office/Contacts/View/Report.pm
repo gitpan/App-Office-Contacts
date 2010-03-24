@@ -8,7 +8,7 @@ with 'App::Office::Contacts::View::Role::Report';
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -21,7 +21,7 @@ sub generate_report
 
 	return $self -> generate_record_report($input);
 
-} # ENd of generate_report.
+} # End of generate_report.
 
 # -----------------------------------------------
 

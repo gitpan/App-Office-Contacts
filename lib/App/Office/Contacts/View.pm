@@ -16,7 +16,7 @@ has report       => (is => 'rw', isa => 'Any');
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -43,7 +43,7 @@ sub build_display_detail_js
 
 	my($js) = $self -> load_tmpl('display.detail.js');
 
-	$js -> param(form_action => ${$self -> config}{'form_action'});
+	$js -> param(form_action => $self -> script_name);
 	$js -> param(sid         => $self -> session -> id);
 
 	return $js -> output;
@@ -60,38 +60,34 @@ sub init
 
 	$self -> notes(App::Office::Contacts::View::Notes -> new
 	(
-		config    => $self -> config,
-		db        => $self -> db,
-		logger    => $self -> logger,
-		session   => $self -> session,
-		tmpl_path => $self -> tmpl_path,
+		db          => $self -> db,
+		script_name => $self -> script_name,
+		session     => $self -> session,
+		tmpl_path   => $self -> tmpl_path,
 	) );
 
 	$self -> organization(App::Office::Contacts::View::Organization -> new
 	(
-		config    => $self -> config,
-		db        => $self -> db,
-		logger    => $self -> logger,
-		session   => $self -> session,
-		tmpl_path => $self -> tmpl_path,
+		db          => $self -> db,
+		script_name => $self -> script_name,
+		session     => $self -> session,
+		tmpl_path   => $self -> tmpl_path,
 	) );
 
 	$self -> person(App::Office::Contacts::View::Person -> new
 	(
-		config    => $self -> config,
-		db        => $self -> db,
-		logger    => $self -> logger,
-		session   => $self -> session,
-		tmpl_path => $self -> tmpl_path,
+		db          => $self -> db,
+		script_name => $self -> script_name,
+		session     => $self -> session,
+		tmpl_path   => $self -> tmpl_path,
 	) );
 
 	$self -> report(App::Office::Contacts::View::Report -> new
 	(
-		config    => $self -> config,
-		db        => $self -> db,
-		logger    => $self -> logger,
-		session   => $self -> session,
-		tmpl_path => $self -> tmpl_path,
+		db          => $self -> db,
+		script_name => $self -> script_name,
+		session     => $self -> session,
+		tmpl_path   => $self -> tmpl_path,
 	) );
 
 } # End of init.

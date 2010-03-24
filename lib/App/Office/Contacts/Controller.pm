@@ -1,8 +1,7 @@
 package App::Office::Contacts::Controller;
 
-use base 'App::Office::Contacts';
-use strict;
-use warnings;
+use parent 'App::Office::Contacts';
+use common::sense;
 
 use App::Office::Contacts::Database;
 use App::Office::Contacts::Util::Config;
@@ -12,15 +11,15 @@ use Log::Dispatch;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
 sub cgiapp_prerun
 {
-	my($self) = @_;
+	my($self, $rm) = @_;
 
-	# Outputs nothing, since logger not yet set up.
+	# Can't call, since logger not yet set up.
 	#$self -> log(debug => 'Entered cgiapp_prerun');
 
 	$self -> param(config => App::Office::Contacts::Util::Config -> new -> config);
@@ -31,11 +30,7 @@ sub cgiapp_prerun
 
 	# Set up the database.
 
-	$self -> param(db => App::Office::Contacts::Database -> new
-	(
-		config => $self -> param('config'),
-		logger => $self -> param('logger'),
-	) );
+	$self -> param(db => App::Office::Contacts::Database -> new);
 
 	# Set up the things shared by:
 	# o App::Office::Contacts
@@ -48,11 +43,10 @@ sub cgiapp_prerun
 
 	$self -> param(view => App::Office::Contacts::View -> new
 	(
-		config    => $self -> param('config'),
-		db        => $self -> param('db'),
-		logger    => $self -> param('logger'),
-		session   => $self -> param('session'),
-		tmpl_path => $self -> tmpl_path,
+		db          => $self -> param('db'),
+		script_name => $self -> script_name,
+		session     => $self -> param('session'),
+		tmpl_path   => $self -> tmpl_path,
 	) );
 
 } # End of cgiapp_prerun.

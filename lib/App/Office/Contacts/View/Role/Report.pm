@@ -4,7 +4,7 @@ use JSON::XS;
 
 use Moose::Role;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -47,7 +47,7 @@ sub build_update_report_js
 
 	my($js) = $self -> load_tmpl('report.js');
 
-	$js -> param(form_action => ${$self -> config}{'form_action'});
+	$js -> param(form_action => $self -> script_name);
 
 	return $js -> output;
 

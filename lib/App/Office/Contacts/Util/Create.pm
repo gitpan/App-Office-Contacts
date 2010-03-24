@@ -1,74 +1,70 @@
 package App::Office::Contacts::Util::Create;
 
-use Carp;
-
 use App::Office::Contacts::Database;
-use App::Office::Contacts::Util::Config;
 
 use DBI;
 
 use DBIx::Admin::CreateTable;
 
+use File::Slurp; # For read_file().
+
 use FindBin::Real;
-
-use Log::Dispatch;
-use Log::Dispatch::DBI;
-
-use Time::Elapsed;
 
 use Moose;
 
-has config         => (is => 'rw', isa => 'HashRef');
-has creator        => (is => 'rw', isa => 'DBIx::Admin::CreateTable');
-has db             => (is => 'rw', isa => 'App::Office::Contacts::Database');
-has last_insert_id => (is => 'rw', isa => 'Int');
-has logger         => (is => 'rw', isa => 'Log::Dispatch');
-has start_time     => (is => 'rw', isa => 'Int', default => time);
-has table_names    => (is => 'rw', isa => 'HashRef');
-has time_option    => (is => 'rw', isa => 'Str');
-has verbose        => (is => 'rw', isa => 'Int', default => 0);
+extends 'App::Office::Contacts::Base';
+
+has creator =>
+(
+	is  => 'rw',
+	isa => 'DBIx::Admin::CreateTable',
+);
+
+has db =>
+(
+	is  => 'rw',
+	isa => 'App::Office::Contacts::Database',
+);
+
+has last_insert_id =>
+(
+	is  => 'rw',
+	isa => 'Int',
+);
+
+has table_names =>
+(
+	is  => 'rw',
+	isa => 'HashRef',
+);
+
+has time_option =>
+(
+	is  => 'rw',
+	isa => 'Str',
+);
+
+has verbose =>
+(
+	is      => 'rw',
+	isa     => 'Int',
+	default => 0,
+);
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
 sub BUILD
 {
-	my($self) = @_;
+	my($self)   = @_;
+	my($config) = $self -> log_dispatch_conf -> config;
 
-	$self -> config(App::Office::Contacts::Util::Config -> new -> config);
-	$self -> logger(Log::Dispatch -> new);
-	$self -> db(App::Office::Contacts::Database -> new
-	(
-		config => $self -> config,
-		logger => $self -> logger
-	) );
+	$self -> db(App::Office::Contacts::Database -> new);
 	$self -> creator(DBIx::Admin::CreateTable -> new(dbh => $self -> db -> dbh, verbose => 0) );
 	$self -> time_option($self -> creator -> db_vendor =~ /(?:MySQL|Postgres)/i ? '(0) without time zone' : '');
-
-	# SQLite insists we create the table before calling Log::Dispatch::DBI.
-	# But that means calling drop_all_tables() and then create_all_tables()
-	# won't work unless we first re-create this log table. So we create it
-	# first, and then if necessary, re-create it in create_all_tables().
-	# Lastly, use eval{} in case the log table already exists.
-
-	if (! $self -> log_table_exists)
-	{
-		$self -> create_log_table;
-	};
-
-	$self -> logger -> add
-	(
-		Log::Dispatch::DBI -> new
-		(
-		 dbh       => $self -> db -> dbh,
-		 min_level => 'info',
-		 name      => __PACKAGE__,
-		)
-	);
-	$self -> logger -> log(level => 'info', message => 'Start run');
 
 	return $self;
 
@@ -80,19 +76,13 @@ sub create_all_tables
 {
 	my($self) = @_;
 
-	# See comment above re SQLite for why we do this.
-
-	if (! $self -> log_table_exists)
-	{
-		$self -> create_log_table;
-	};
-
 	# Warning: The order is important.
 
 	my($method);
 	my($table_name);
 
 	for $table_name (qw/
+log
 sessions
 broadcasts
 communication_types
@@ -123,6 +113,8 @@ notes
 
 		$self -> $method;
 	}
+
+	return 0;
 
 }	# End of create_all_tables.
 
@@ -617,16 +609,6 @@ SQL
 
 # -----------------------------------------------
 
-sub DEMOLISH
-{
-	my($self) = @_;
-
-	$self -> pwint("Elapsed time: " . Time::Elapsed::elapsed(time - $self -> start_time) );
-
-} # End of DEMOLISH.
-
-# -----------------------------------------------
-
 sub drop_table
 {
 	my($self, $table_name) = @_;
@@ -674,20 +656,9 @@ log
 		$self -> drop_table($table_name);
 	}
 
-}	# End of drop_all_tables.
-
-# -----------------------------------------------
-
-sub drop_and_create_all_tables
-{
-	my($self) = @_;
-
-	$self -> drop_all_tables;
-	$self -> create_all_tables;
-
 	return 0;
 
-} # End of drop_and_create_all_tables.
+}	# End of drop_all_tables.
 
 # -----------------------------------------------
 
@@ -695,21 +666,25 @@ sub dump
 {
 	my($self, $table_name) = @_;
 
-	if ($self -> verbose < 2)
+	if (! $self -> verbose)
 	{
 		return;
 	}
 
-	my($row) = $self -> db -> dbh -> selectall_arrayref("select * from $table_name");
+	my($record) = $self -> db -> dbh -> selectall_arrayref("select * from $table_name order by id", {Slice => {} });
 
-	$self -> pwint("\tTable: $table_name:");
+	print "\t$table_name: \n";
 
-	for my $record (@$row)
+	my($row);
+
+	for $row (@$record)
 	{
-		$self -> pwint("\t" . join('. ', map{"$_ => $$record{$_}"} sort keys %$record) );
+		print "\t";
+		print map{"$_ => $$row{$_}. "} sort keys %$row;
+		print "\n";
 	}
 
-	$self -> pwint;
+	print "\n";
 
 } # End of dump.
 
@@ -725,43 +700,9 @@ sub get_table_names
 
 # -----------------------------------------------
 
-sub log
-{
-	my($self, $s) = @_;
-
-	$self -> logger -> log(level => 'info', message => $s ? $s : '');
-
-}	# End of log.
-
-# -----------------------------------------------
-
-sub log_table_exists
-{
-	my($self)   = @_;
-	my($exists) = 0;
-	my($sth)    = $self -> db -> dbh -> table_info(undef, undef, '%', 'TABLE');
-
-	my($table_data, $table_name);
-
-	while ($table_data = $sth -> fetchrow_hashref)
-	{
-		if ($$table_data{'TABLE_NAME'} eq 'log')
-		{
-			$exists = 1;
-		}
-	}
-
-	return $exists;
-
-} # End of log_table_exists.
-
-# -----------------------------------------------
-
 sub populate_all_tables
 {
 	my($self) = @_;
-
-	$self -> pwint("Populating tables for database 'contacts'");
 
 	# Warning: The order of these calls is important.
 
@@ -779,15 +720,10 @@ sub populate_all_tables
 	$self -> table_names($self -> get_table_names);
 
 	$self -> populate_email_address_types_table;
-	$self -> populate_email_addresses_table;
 
 	$self -> populate_phone_number_types_table;
-	$self -> populate_phone_numbers_table;
 
 	$self -> populate_occupation_titles_table;
-	$self -> populate_organizations_table;
-
-	$self -> pwint('Finished populating tables');
 
 	return 0;
 
@@ -799,14 +735,14 @@ sub populate_broadcasts_table
 {
 	my($self)       = @_;
 	my($table_name) = 'broadcasts';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_broadcasts_table.
@@ -817,14 +753,14 @@ sub populate_communication_types_table
 {
 	my($self)       = @_;
 	my($table_name) = 'communication_types';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_communication_types_table.
@@ -835,14 +771,14 @@ sub populate_email_address_types_table
 {
 	my($self)       = @_;
 	my($table_name) = 'email_address_types';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_email_address_types_table.
@@ -853,7 +789,7 @@ sub populate_email_addresses_table
 {
 	my($self)       = @_;
 	my($table_name) = 'email_addresses';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -865,7 +801,7 @@ sub populate_email_addresses_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_email_addresses_table.
@@ -876,7 +812,7 @@ sub populate_email_people_table
 {
 	my($self)       = @_;
 	my($table_name) = 'email_people';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -888,7 +824,7 @@ sub populate_email_people_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_email_people_table.
@@ -900,6 +836,9 @@ sub populate_fake_data
 	my($self) = @_;
 
 	$self -> populate_people_table;
+	$self -> populate_email_addresses_table;
+	$self -> populate_phone_numbers_table;
+	$self -> populate_organizations_table;
 	$self -> populate_email_people_table;
 	$self -> populate_phone_people_table;
 
@@ -913,14 +852,14 @@ sub populate_genders_table
 {
 	my($self)       = @_;
 	my($table_name) = 'genders';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_genders_table.
@@ -931,14 +870,14 @@ sub populate_occupation_titles_table
 {
 	my($self)       = @_;
 	my($table_name) = 'occupation_titles';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_occupation_titles_table.
@@ -949,7 +888,7 @@ sub populate_organizations_table
 {
 	my($self)       = @_;
 	my($table_name) = 'organizations';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -961,7 +900,7 @@ sub populate_organizations_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_organizations_table.
@@ -972,7 +911,7 @@ sub populate_people_table
 {
 	my($self)       = @_;
 	my($table_name) = 'people';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -983,7 +922,7 @@ sub populate_people_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_people_table.
@@ -994,14 +933,14 @@ sub populate_phone_number_types_table
 {
 	my($self)       = @_;
 	my($table_name) = 'phone_number_types';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_phone_number_types_table.
@@ -1012,7 +951,7 @@ sub populate_phone_numbers_table
 {
 	my($self)       = @_;
 	my($table_name) = 'phone_numbers';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -1024,7 +963,7 @@ sub populate_phone_numbers_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_phone_numbers_table.
@@ -1035,7 +974,7 @@ sub populate_phone_people_table
 {
 	my($self)       = @_;
 	my($table_name) = 'phone_people';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("fake.$table_name.txt");
 
 	my(@field, %field);
 
@@ -1047,7 +986,7 @@ sub populate_phone_people_table
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_phone_people_table.
@@ -1058,14 +997,14 @@ sub populate_report_entities_table
 {
 	my($self)       = @_;
 	my($table_name) = 'report_entities';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_report_entities_table.
@@ -1076,14 +1015,14 @@ sub populate_reports_table
 {
 	my($self)       = @_;
 	my($table_name) = 'reports';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_reports_table.
@@ -1094,14 +1033,14 @@ sub populate_roles_table
 {
 	my($self)       = @_;
 	my($table_name) = 'roles';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_roles_table.
@@ -1112,7 +1051,7 @@ sub populate_table_names_table
 {
 	my($self)       = @_;
 	my($table_name) = 'table_names';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	my(@field);
 
@@ -1123,7 +1062,7 @@ sub populate_table_names_table
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $field[0], singular => $field[1]});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_table_names_table.
@@ -1134,14 +1073,14 @@ sub populate_titles_table
 {
 	my($self)       = @_;
 	my($table_name) = 'titles';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_titles_table.
@@ -1152,48 +1091,31 @@ sub populate_yes_nos_table
 {
 	my($self)       = @_;
 	my($table_name) = 'yes_nos';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	for (@$data)
 	{
 		$self -> db -> util -> insert_hash_get_id($table_name, {name => $_});
 	}
 
-	$self -> log("Populated table $table_name");
+	$self -> log(debug => "Populated table $table_name");
 	$self -> dump($table_name);
 
 }	# End of populate_yes_nos_table.
 
 # -----------------------------------------------
 
-sub pwint
-{
-	my($self, $msg, $level) = @_;
-	$msg   ||= '';
-	$level ||= 0;
-
-	if ($self -> verbose > $level)
-	{
-		print "$msg\n";
-	}
-
-} # End of pwint.
-
-# --------------------------------------------------
-
-sub read_file
+sub read_a_file
 {
 	my($self, $input_file_name) = @_;
-	$input_file_name            = FindBin::Real::Bin . "/../data/$input_file_name";
+	$input_file_name = FindBin::Real::Bin . "/../data/$input_file_name";
+	my(@line)        = read_file($input_file_name);
 
-	open(INX, $input_file_name) || Carp::croak("Can't open($input_file_name): $!");
-	my(@line) = grep{! /^$/ && ! /^#/} map{s/^\s+//; s/\s+$//; $_} <INX>;
-	close INX;
 	chomp @line;
 
-	return [@line];
+	return [grep{! /^$/ && ! /^#/} map{s/^\s+//; s/\s+$//; $_} @line];
 
-}	# End of read_file.
+} # End of read_a_file.
 
 # -----------------------------------------------
 
@@ -1203,11 +1125,11 @@ sub report
 
 	if ($result)
 	{
-		Carp::croak "Table '$table_name' $result. \n";
+		die "Table '$table_name' $result. \n";
 	}
 	elsif ($self -> verbose)
 	{
-		print STDERR "Table '$table_name' $message. \n";
+		$self -> log(info => "Table '$table_name' $message");
 	}
 
 }	# End of report.
@@ -1218,7 +1140,7 @@ sub report_all_tables
 {
 	my($self)       = @_;
 	my($table_name) = 'table_names';
-	my($data)       = $self -> read_file("$table_name.txt");
+	my($data)       = $self -> read_a_file("$table_name.txt");
 
 	my($count);
 	my(@field);
@@ -1233,14 +1155,6 @@ sub report_all_tables
 	}
 
 }	# End of report_all_tables.
-
-# --------------------------------------------------
-
-sub run
-{
-	my($self) = @_;
-
-} # End of run.
 
 # -----------------------------------------------
 

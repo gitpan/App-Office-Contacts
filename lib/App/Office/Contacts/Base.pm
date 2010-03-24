@@ -1,36 +1,39 @@
 package App::Office::Contacts::Base;
 
+use App::Office::Contacts::Util::LogConfig;
+
 use Moose;
 
-has logger => (is => 'ro', isa => 'Log::Dispatch', required => 1);
+with 'MooseX::LogDispatch';
+
+has log_dispatch_conf =>
+(
+	is => 'ro',
+	lazy => 1,
+	default => sub{App::Office::Contacts::Util::LogConfig -> new},
+);
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
-# This sub is copied from App::Office::Controller.
+# This sub is copied from App::Office::Contacts.
 # This version is for Moose-base modules.
 # CGI::Application-based modules have their own version.
 
 sub log
 {
 	my($self, $level, $s) = @_;
+	$level ||= 'info';
 
-	if ($self -> logger)
+	if ($s)
 	{
-		if ($s)
-		{
-			$s = (caller)[0] . ". $s";
-			$s =~ s/^App::Office::Contacts/\*/;
-		}
-		else
-		{
-			$s = '';
-		}
-
-		$self -> logger -> log(level => $level, message => $s);
+		$s = (caller)[0] . ". $s";
+		$s =~ s/^App::Office::Contacts/\*/;
 	}
+
+	$self -> logger -> $level($s || '');
 
 } # End of log.
 

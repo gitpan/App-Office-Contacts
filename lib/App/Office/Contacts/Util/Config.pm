@@ -1,7 +1,5 @@
 package App::Office::Contacts::Util::Config;
 
-use Carp;
-
 use Config::Tiny;
 
 use Moose;
@@ -12,7 +10,7 @@ has section          => (is => 'rw', isa => 'Str', required => 0);
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
@@ -49,7 +47,7 @@ sub init
 
 	if (! ${$self -> config}{$self -> section})
 	{
-		Carp::croak "Config file '$path' does not contain the section [@{[$self -> section]}]";
+		die "Config file '$path' does not contain the section [@{[$self -> section]}]";
 	}
 
 	# Check [x] where x is host=x within [global].
@@ -58,7 +56,7 @@ sub init
 
 	if (! ${$self -> config}{$self -> section})
 	{
-		Carp::croak "Config file '$path' does not contain the section [@{[$self -> section]}]";
+		die "Config file '$path' does not contain the section [@{[$self -> section]}]";
 	}
 
 	# Move desired section into config, so caller can just use $self -> config to get a hashref.

@@ -14,7 +14,6 @@ use Moose;
 
 extends 'App::Office::Contacts::Base';
 
-has config        => (is => 'ro', isa => 'HashRef', required => 1);
 has dbh           => (is => 'rw', isa => 'Any');
 has email_address => (is => 'rw', isa => 'App::Office::Contacts::Database::EmailAddress');
 has notes         => (is => 'rw', isa => 'App::Office::Contacts::Database::Notes');
@@ -26,56 +25,58 @@ has util          => (is => 'rw', isa => 'Any');
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # -----------------------------------------------
 
 sub BUILD
 {
 	my($self)   = @_;
-	my($config) = $self -> config;
+	my($config) = $self -> log_dispatch_conf -> config;
 	my($attr)   =
 	{
-		AutoCommit => $$config{'AutoCommit'},
-		RaiseError => $$config{'RaiseError'},
+		AutoCommit => $$config{AutoCommit},
+		RaiseError => $$config{RaiseError},
 	};
 
-	$self -> dbh(DBI -> connect($$config{'dsn'}, $$config{'username'}, $$config{'password'}, $attr) );
+	$self -> dbh(DBI -> connect($$config{dsn}, $$config{username}, $$config{password}, $attr) );
+
+	if ( ($$config{dsn} =~ /SQLite/i) && $$config{unicode})
+	{
+		my($dbh)       = $self -> dbh;
+		$$dbh{unicode} = 1;
+
+		$self -> dbh($dbh);
+	}
 
 	$self -> email_address(App::Office::Contacts::Database::EmailAddress -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> notes(App::Office::Contacts::Database::Notes -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> occupation(App::Office::Contacts::Database::Occupation -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> organization(App::Office::Contacts::Database::Organization -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> person(App::Office::Contacts::Database::Person -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> phone_number(App::Office::Contacts::Database::PhoneNumber -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 	$self -> init;
@@ -90,8 +91,7 @@ sub init
 
 	$self -> util(App::Office::Contacts::Database::Util -> new
 	(
-		db     => $self,
-		logger => $self -> logger,
+		db => $self,
 	) );
 
 } # End of init.

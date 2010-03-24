@@ -40,7 +40,7 @@ var record_report_cb =
 function report_onsubmit()
 {
 	var report = document.report_form.report_id.value;
-	var option = document.report_form.report_id.options[report].text;
+	var option = document.report_form.report_id.options[report - 1].text;
 	option     = option.replace(/\s/, "_"); // To make a nice path info.
 
 	if (option == "Records")

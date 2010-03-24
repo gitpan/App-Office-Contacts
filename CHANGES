@@ -1,5 +1,51 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.05  Tue Mar  2  9:28:00 2010
+	- In cgiapp_prerun() protect against XSS and CSRF:
+		o Only accept CGI params if the request method is 'POST'.
+		o Ensure digest in session matches digest in cookie.
+		o http://www.freedom-to-tinker.com/blog/wzeller/popular-websites-vulnerable-cross-site-request-forgery-attacks
+	- Change 'use base' to 'use parent'.
+	- Remove form_action from config file. See sub script_name.
+	- Replace references to FCGI with Plack. This includes no longer
+		shipping FCGI-specific files nor patches to Apache's httpd.conf.
+	- Ship httpd/cgi-bin/office/contacts.psgi.
+	- Adopt Log::Dispatch::Configurator.
+		See App::Office::Contacts::Util::LogConfig.
+	- Replace Carp::croak with die, assuming calling code uses Try::Tiny.
+	- Stop using Time::Elapsed (at table create/populate time).
+	- Zap drop_and_create_all_tables() and run() from App::Office::Contacts::Util::Create.
+	- In drop.tables.pl and create.tables.pl, change the 'verbose+' option
+		definition to 'verbose', since the '+' doesn't make sense.
+	- Clean up what is real data and what is fake data.
+	- Rename data/email_addresses.txt => data/fake.email_addresses.txt.
+	- Rename data/email_people.txt => data/fake.email_people.txt.
+	- Rename data/people.txt => data/fake.people.txt.
+	- Rename data/phone_numbers.txt => data/fake.phone_numbers.txt.
+	- Rename data/phone_people.txt => data/fake.phone_people.txt.
+	- Rename data/organizations.txt => data/fake.organizations.txt.
+	- Add comments to .htoffice.contacts.conf, while simplifying the
+		discussion of the Javascript URL.
+	- Change the default URL of the FAQ.
+	- Use common::sense instead of strict and warnings.
+	- Add unicode to .htoffice.contacts.conf - used by SQLite - and add
+		corresponding code to BEGIN{} in App::Office::Contacts::Database,
+		in case anyone wants to use DBD::SQLite.
+	- Fix off-by-one error in report.js when indexing into
+		document.report_form.report_id.options[report - 1].text.
+	- Change some logging in Contacts.pm from info to debug.
+
+1.04  Sun Feb 21 12:54:14 2010
+	- Remove text 'All rights reserved' (for Debian licensing).
+	- Remove POD heads 'Required Modules' and 'Changes'.
+	- Replace personal doc root with /var/www.
+	- Use namespace::autoclean with Moose.
+
+1.03  Fri Feb  5 17:27:00 2010
+	- Remove personal use lib from CGI scripts.
+	- Use smarter check for calendar div in Contacts.build_head_init,
+		so cursor appears in search name box upon startup.
+
 1.02  Fri Jan 29 09:52:00 2010
 	- Change namespace from CGI::Office::* to App::Office::* after discussion with Matt Trout.
 	- Add config item css_url.

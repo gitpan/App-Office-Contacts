@@ -25,7 +25,7 @@ if ($option_parser -> getoptions
 (
  \%option,
  'help',
- 'verbose+',
+ 'verbose',
 ) )
 {
 	pod2usage(1) if ($option{'help'});

@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::Database::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 # --------------------------------------------------
 
@@ -539,6 +539,6 @@ sub update
 
 # --------------------------------------------------
 
-no Moose;__PACKAGE__ -> meta -> make_immutable;
+__PACKAGE__ -> meta -> make_immutable;
 
 1;

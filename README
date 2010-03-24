@@ -41,15 +41,6 @@ On all systems:
 
 Run Contacts.pm through you favourite pod2html translator.
 
-If you are using my fancy-pom2.pl, with its 'default.css' file installed in
-/apache2/htdocs/assets/css/, you'd do:
-
-shell>perl fancy-pom2.pl html -css Contacts.pm > /apache2/htdocs/assets/Contacts.html
-
-or perhaps something like:
-
-shell>perl fancy-pom2.pl html -css Contacts.pm > /perl/html/site/lib/CGI/Office/Contacts.html
-
 2 Installing from an ActiveState distro
 ---------------------------------------
 shell>unzip CGI-Office-Contacts-1.00.zip
