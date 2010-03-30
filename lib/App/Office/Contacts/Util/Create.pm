@@ -53,7 +53,7 @@ has verbose =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 # -----------------------------------------------
 
@@ -351,6 +351,9 @@ name varchar(255) not null,
 timestamp timestamp $time_option not null default current_timestamp
 )
 SQL
+
+	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper(name) )");
+
 	$self -> report($table_name, 'created', $result);
 
 }	# End of create_organizations_table.
@@ -382,6 +385,9 @@ surname varchar(255) not null,
 timestamp timestamp $time_option not null default current_timestamp
 )
 SQL
+
+	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper(name) )");
+
 	$self -> report($table_name, 'created', $result);
 
 }	# End of create_people_table.

@@ -46,6 +46,7 @@ WriteMakefile
 		Moose                       => 0.98,
 		MooseX::LogDispatch         => 1.2000,
 		namespace::autoclean        => 0.09,
+		parent                      => 0.218,
 		Path::Class                 => 0,
 		Sub::Exporter               => 0,
 	},

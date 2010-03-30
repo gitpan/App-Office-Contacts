@@ -1,5 +1,12 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.06  Mon Mar 29 14:53:00 2010
+	- Create indexes on organizations and people tables, using upper(name),
+		to speed up searching. The index names are:
+		- organizations: opganizations_upper_name
+		- people: people_upper_name.
+	- Add parent to pre-reqs in Build.PL and Makefile.PL.
+
 1.05  Tue Mar  2  9:28:00 2010
 	- In cgiapp_prerun() protect against XSS and CSRF:
 		o Only accept CGI params if the request method is 'POST'.
