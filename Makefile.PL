@@ -49,6 +49,8 @@ WriteMakefile
 		parent                      => 0.218,
 		Path::Class                 => 0,
 		Sub::Exporter               => 0,
+		Test::Simple                => 0.94,
+		Test::Pod                   => 1.41,
 	},
 	VERSION_FROM => 'lib/CGI/Office/Contacts.pm',
 );

@@ -1,5 +1,12 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.07  Wed Apr  7  8:51:00 2010
+	- Update pre-reqs for Test::Pod to 1.41 to avoid Test::Pod's dithering
+		about a POD construct I used: L<text|scheme:...>, which makes a test fail.
+		See comments for V 1.40 and 1.41 at:
+		http://cpansearch.perl.org/src/DWHEELER/Test-Pod-1.42/Changes
+	- Update pre-reqs from Test::More V 0 to Test::Simple 0.94.
+
 1.06  Mon Mar 29 14:53:00 2010
 	- Create indexes on organizations and people tables, using upper(name),
 		to speed up searching. The index names are:

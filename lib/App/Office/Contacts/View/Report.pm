@@ -8,7 +8,7 @@ with 'App::Office::Contacts::View::Role::Report';
 
 use namespace::autoclean;
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 # -----------------------------------------------
 

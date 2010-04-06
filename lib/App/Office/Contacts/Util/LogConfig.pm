@@ -10,7 +10,7 @@ has config => (is => 'rw', isa => 'HashRef', required => 0);
 
 use namespace::autoclean;
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 # -----------------------------------------------
 

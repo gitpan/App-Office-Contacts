@@ -5,7 +5,7 @@ use common::sense;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 # -----------------------------------------------
 
