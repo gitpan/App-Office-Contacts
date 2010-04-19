@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::Database::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # --------------------------------------------------
 
@@ -73,7 +73,7 @@ sub get_people
 
 	my($broadcast)  = $self -> db -> util -> get_broadcasts;
 	my($deleted_id) = $$broadcast{'(Hidden)'};
-	my($pop)        = $self -> db -> dbh -> selectall_arrayref("select * from people where upper(name) like ? order by name", {Slice => {} }, uc "%$name%");
+	my($pop)        = $self -> db -> dbh -> selectall_arrayref("select * from people where upper_name like ? order by name", {Slice => {} }, uc "%$name%");
 	my($result)     = [];
 
 	$self -> log(debug => "People count: @{[scalar @$pop]}");
@@ -159,7 +159,7 @@ sub get_people_via_name_prefix
 	$self -> log(debug => "Entered get_people_via_name_prefix: $prefix");
 
 	$prefix      = uc $prefix;
-	my($id2name) = $self -> db -> dbh -> select_map("select id, name from people where broadcast_id != 3 and upper(name) like '$prefix%'");
+	my($id2name) = $self -> db -> dbh -> select_map("select id, name from people where broadcast_id != 3 and upper_name like '$prefix%'");
 
 	my($email_user, $email_address);
 	my($id, $i);
@@ -211,7 +211,7 @@ sub get_person_id_via_name
 
 	$self -> log(debug => "Entered get_person_id_via_name: $name");
 
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from people where broadcast_id != 3 and name = ?', {}, $name);
+	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from people where broadcast_id != 3 and upper_name = ?', {}, uc $name);
 
 	return $id ? $$id{'id'} : 0;
 
@@ -360,6 +360,8 @@ sub save_person_record
 	{
 		$$data{$_} = $$person{$_};
 	}
+
+	$$data{upper_name} = uc $$data{name};
 
 	if ($context eq 'add')
 	{

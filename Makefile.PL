@@ -12,14 +12,14 @@ WriteMakefile
 	) : (),
 	clean =>
 	{
-		FILES => 'blib/* Makefile MANIFEST CGI-Office-Contacts-*'
+		FILES => 'blib/* Makefile MANIFEST App-Office-Contacts-*'
 	},
 	dist =>
 	{
 		COMPRESS => 'gzip',
 		SUFFIX   => 'gz'
 	},
-	DISTNAME  => 'CGI-Office-Contacts',
+	DISTNAME  => 'App-Office-Contacts',
 	NAME      => 'App::Office::Contacts',
 	PL_FILES  => {},
 	PREREQ_PM =>
@@ -33,7 +33,7 @@ WriteMakefile
 		Data::Verifier              => 0,
 		DateTime                    => 0,
 		Date::Simple                => 0,
-		DBD::Pg                     => 0,
+		DBD::SQLite                 => 1.29,
 		DBI                         => 0,
 		DBIx::Admin::CreateTable    => 0,
 		Digest::SHA                 => 5.48,
@@ -52,5 +52,5 @@ WriteMakefile
 		Test::Simple                => 0.94,
 		Test::Pod                   => 1.41,
 	},
-	VERSION_FROM => 'lib/CGI/Office/Contacts.pm',
+	VERSION_FROM => 'lib/App/Office/Contacts.pm',
 );

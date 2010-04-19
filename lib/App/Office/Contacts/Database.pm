@@ -25,7 +25,7 @@ has util          => (is => 'rw', isa => 'Any');
 
 use namespace::autoclean;
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # -----------------------------------------------
 
@@ -41,10 +41,10 @@ sub BUILD
 
 	$self -> dbh(DBI -> connect($$config{dsn}, $$config{username}, $$config{password}, $attr) );
 
-	if ( ($$config{dsn} =~ /SQLite/i) && $$config{unicode})
+	if ( ($$config{dsn} =~ /SQLite/i) && $$config{sqlite_unicode})
 	{
-		my($dbh)       = $self -> dbh;
-		$$dbh{unicode} = 1;
+		my($dbh)              = $self -> dbh;
+		$$dbh{sqlite_unicode} = 1;
 
 		$self -> dbh($dbh);
 	}

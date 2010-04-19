@@ -15,7 +15,7 @@ has log_dispatch_conf =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # -----------------------------------------------
 # This sub is copied from App::Office::Contacts.

@@ -53,7 +53,7 @@ has verbose =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # -----------------------------------------------
 
@@ -348,11 +348,12 @@ creator_id integer not null,
 role_id integer not null references roles(id),
 home_page varchar(255) not null,
 name varchar(255) not null,
-timestamp timestamp $time_option not null default current_timestamp
+timestamp timestamp $time_option not null default current_timestamp,
+upper_name varchar(255) not null
 )
 SQL
 
-	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper(name) )");
+	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper_name)");
 
 	$self -> report($table_name, 'created', $result);
 
@@ -382,11 +383,12 @@ home_page varchar(255) not null,
 name varchar(255) not null,
 preferred_name varchar(255) not null,
 surname varchar(255) not null,
-timestamp timestamp $time_option not null default current_timestamp
+timestamp timestamp $time_option not null default current_timestamp,
+upper_name varchar(255) not null
 )
 SQL
 
-	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper(name) )");
+	$self -> db -> dbh -> do("create index ${table_name}_upper_name on $table_name (upper_name)");
 
 	$self -> report($table_name, 'created', $result);
 
@@ -900,8 +902,9 @@ sub populate_organizations_table
 
 	for (@$data)
 	{
-		@field = split(/\s*,\s*/, $_);
-		%field = map{($_ => shift @field)} (qw/broadcast_id communication_type_id creator_id role_id home_page name/);
+		@field             = split(/\s*,\s*/, $_);
+		%field             = map{($_ => shift @field)} (qw/broadcast_id communication_type_id creator_id role_id home_page name/);
+		$field{upper_name} = uc $field{name};
 
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
@@ -925,6 +928,8 @@ sub populate_people_table
 	{
 		@field             = split(/\s*,\s*/, $_);
 		%field             = map{($_ => shift @field)} (qw/broadcast_id communication_type_id creator_id gender_id role_id title_id date_of_birth given_names home_page name preferred_name surname/);
+		$field{upper_name} = uc $field{name};
+
 		$self -> db -> util -> insert_hash_get_id($table_name, \%field);
 	}
 

@@ -5,7 +5,7 @@ use common::sense;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # -----------------------------------------------
 
@@ -92,6 +92,23 @@ EJS
 	return $head_js;
 
 } # End of build_head_js.
+
+# -----------------------------------------------
+
+sub display
+{
+	my($self)        = @_;
+	my($cookie_name) = 'contacts';
+
+	$self -> log(debug => 'Entered display');
+
+	return 'Invalid cookie digest' if ($self -> validate_post($cookie_name) == 0);
+
+	$self -> generate_cookie($cookie_name);
+
+	return $self -> build_web_page;
+
+} # End of display.
 
 # -----------------------------------------------
 

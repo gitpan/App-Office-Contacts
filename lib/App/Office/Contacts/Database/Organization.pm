@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::Database::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # --------------------------------------------------
 
@@ -94,7 +94,7 @@ sub get_organization_id_via_name
 
 	$self -> log(debug => "Entered get_organization_id_via_name: $name");
 
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from organizations where broadcast_id != 3 and name = ?', {}, $name);
+	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from organizations where broadcast_id != 3 and upper_name = ?', {}, uc $name);
 
 	return $id ? $$id{'id'} : 0;
 
@@ -122,7 +122,7 @@ sub get_organizations
 
 	my($broadcast)  = $self -> db -> util -> get_broadcasts;
 	my($deleted_id) = $$broadcast{'(Hidden)'};
-	my($org)        = $self -> db -> dbh -> selectall_arrayref("select * from organizations where upper(name) like ? order by name", {Slice => {} }, uc "%$name%");
+	my($org)        = $self -> db -> dbh -> selectall_arrayref("select * from organizations where upper_name like ? order by name", {Slice => {} }, uc "%$name%");
 	my($result)     = [];
 
 	$self -> log(debug => "Org count: @{[scalar @$org]}");
@@ -260,7 +260,7 @@ sub get_organizations_for_report
 
 	$self -> log(debug => 'Entered get_organizations_for_report');
 
-	return $self -> db -> dbh -> selectall_arrayref('select * from organizations where name != ?', {Slice => {} }, $name) || [];
+	return $self -> db -> dbh -> selectall_arrayref('select * from organizations where upper_name != ?', {Slice => {} }, uc $name) || [];
 
 } # End of get_organizations_for_report.
 
@@ -311,7 +311,7 @@ sub get_organizations_via_name_prefix
 	$self -> log(debug => "Entered get_organizations_via_name_prefix: $prefix");
 
 	$prefix      = uc $prefix;
-	my(%id2name) = $self -> db -> util -> select_map("select id, name from organizations where broadcast_id != 3 and upper(name) like '$prefix%'");
+	my(%id2name) = $self -> db -> util -> select_map("select id, name from organizations where broadcast_id != 3 and upper_name like '$prefix%'");
 
 	my($id);
 	my(@result);
@@ -341,6 +341,8 @@ sub save_organization_record
 	{
 		$$data{$_} = $$organization{$_};
 	}
+
+	$$data{upper_name} = uc $$data{name};
 
 	if ($context eq 'add')
 	{

@@ -1,5 +1,26 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.09  Tue Apr 20  8:38:00 2010
+	- Comment out the processing which checks for CSRF, since I excountered
+		a case where it did not work.
+
+1.08  Fri Apr 16  8:52:00 2010
+	- Warning: The organizations and people tables have a new column: upper_name.
+		This is due to a defect in SQLite, which does not allow function calls
+		when defining an index. Hence the index on people(upper(name) ) has to be
+		now written as people(upper_name). You can easily write a little program
+		to use alter table, and then populate the new column.
+		The search code uses the new column.
+	- Change SQLite attribute from unicode to sqlite_unicode.
+	- Change the default database driver from Postgres to SQLite,
+		to make installation easier (by not requiring DBD::Pg).
+		If using another database server, you'll need to edit the 2 lines
+		in .htoffice.contacts.conf which refer to SQLite.
+	- Fix Makefile.PL to use App::* not CGI::*.
+		My apologies for this carelessness.
+	- Rework cookies and POST validation, to allow Contacts, Donations and
+		Import::vCards to run in parallel.
+
 1.07  Wed Apr  7  8:51:00 2010
 	- Update pre-reqs for Test::Pod to 1.41 to avoid Test::Pod's dithering
 		about a POD construct I used: L<text|scheme:...>, which makes a test fail.

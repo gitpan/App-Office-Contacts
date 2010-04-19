@@ -4,9 +4,9 @@
 # 1)
 # Edit .htoffice.contacts.conf to change tmpl_path to /dev/shm...
 # 2) One of:
-# start_server --port=127.0.0.1:5003 -- starman --workers 2 httpd/cgi-bin/office/contacts.psgi &
+# start_server --port=127.0.0.1:5003 -- starman --workers 1 httpd/cgi-bin/office/contacts.psgi &
 # or
-# plackup --host 127.0.0.1 --port 5003 httpd/cgi-bin/office/contacts.psgi
+# plackup --host 127.0.0.1 --port 5003 httpd/cgi-bin/office/contacts.psgi &
 
 use strict;
 use warnings;

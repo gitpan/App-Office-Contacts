@@ -13,7 +13,7 @@ use Log::Dispatch::DBI;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.07';
+our $VERSION = '1.09';
 
 # -----------------------------------------------
 
@@ -169,13 +169,11 @@ sub build_search_tab
 
 # -----------------------------------------------
 
-sub display
+sub build_web_page
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered display');
-
-	return if ($self -> validate_post == 0);
+	$self -> log(debug => 'Entered build_web_page');
 
 	# Generate the web page itself. This is not loaded by sub cgiapp_init(),
 	# because, with AJAX, we only need it the first time the script is run.
@@ -188,25 +186,25 @@ sub display
 	$page -> param(head_js   => $self -> build_head_js($search_tab[0]) );
 	$page -> param(yui_url   => ${$self -> param('config')}{'yui_url'});
 
-	$self -> generate_cookie;
-
 	return $page -> output;
 
-} # End of display.
+} # End of build_web_page.
 
 # -----------------------------------------------
 
 sub generate_cookie
 {
-	my($self) = @_;
+	my($self, $cookie_name) = @_;
 
-	$self -> log(debug => 'Entered generate_cookie');
+	return; # Rig.
+
+	$self -> log(debug => "Entered generate_cookie: $cookie_name");
 
 	# Ensure the Initialize run mode outputs a cookie.
 
 	if ($self -> param('app') eq '')
 	{
-		my($cookie) = $self -> query -> cookie(-name => 'digest', -value => $self -> generate_digest);
+		my($cookie) = $self -> query -> cookie(-name => $cookie_name, -value => $self -> generate_digest($cookie_name) );
 
 		$self -> header_add(-cookie => $cookie);
 	}
@@ -217,7 +215,7 @@ sub generate_cookie
 
 sub generate_digest
 {
-	my($self)   = @_;
+	my($self, $cookie_name) = @_;
 	my($digest) = Digest::SHA -> new(256);
 	my($uuid)   = Data::UUID -> new -> create_str;
 
@@ -228,7 +226,7 @@ sub generate_digest
 	$self -> log(debug => "UUID:   $uuid");
 	$self -> log(debug => "Digest: $digest");
 
-	$self -> param('session') -> param(digest => $digest);
+	$self -> param('session') -> param($cookie_name => $digest);
 
 	return $digest;
 
@@ -357,12 +355,14 @@ sub teardown
 
 sub validate_post
 {
-	my($self)  = @_;
+	my($self, $cookie_name)  = @_;
 	my($q)     = $self -> query;
 	my(@p)     = $q -> param;
 	my($valid) = 1; # Valid.
 
-	$self -> log(debug => 'Entered validate_post');
+	return $valid; # Rig.
+
+	$self -> log(debug => "Entered validate_post: $cookie_name");
 
 	# Ensure CGI params are only submitted with POST requests.
 
@@ -377,8 +377,8 @@ sub validate_post
 
 	if ($valid && ($#p >= 0) )
 	{
-		my($cookie_digest)  = $q -> cookie('digest');
-		my($session_digest) = $self -> param('session') -> param('digest');
+		my($cookie_digest)  = $q -> cookie($cookie_name);
+		my($session_digest) = $self -> param('session') -> param($cookie_name);
 
 		if ($cookie_digest ne $session_digest)
 		{
@@ -608,7 +608,9 @@ All such programs are in the scripts/ directory.
 After unpacking the distro, create and populate the database:
 
 	shell>cd CGI-Office-Contacts-1.00
-	shell>perl -Ilib scripts/drop.tables.pl -v
+	# Naturally, you only drop /pre-existing/ tables :-),
+	# so use drop.tables.pl later, when re-building the db.
+	#shell>perl -Ilib scripts/drop.tables.pl -v
 	shell>perl -Ilib scripts/create.tables.pl -v
 	shell>perl -Ilib scripts/populate.tables.pl -v
 	shell>perl -Ilib scripts/populate.fake.data.pl -v
