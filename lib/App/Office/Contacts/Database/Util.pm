@@ -8,7 +8,7 @@ has table_map => (is => 'rw', isa => 'HashRef', required => 0);
 
 use namespace::autoclean;
 
-our $VERSION = '1.09';
+our $VERSION = '1.10';
 
 # -----------------------------------------------
 
@@ -231,6 +231,7 @@ sub set_table_map
 	$self -> table_map($self -> db -> dbh -> selectall_hashref('select * from table_names', 'name') );
 
 } # End of set_table_map.
+
 # --------------------------------------------------
 
 sub validate_broadcast

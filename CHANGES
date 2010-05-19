@@ -1,5 +1,11 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.10  Wed May 19  11:11:00 2010
+	- Update comments re starman usage in contacts.psgi.
+	- Chop mailing list stuff from support.
+	- Update version numbers in Build.PL and Makefile.PL.
+	- Ensure config code is only called once (App::Office::Contacts::Util::LogConfig).
+
 1.09  Tue Apr 20  8:38:00 2010
 	- Comment out the processing which checks for CSRF, since I excountered
 		a case where it did not work.

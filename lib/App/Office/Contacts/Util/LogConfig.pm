@@ -10,7 +10,7 @@ has config => (is => 'rw', isa => 'HashRef', required => 0);
 
 use namespace::autoclean;
 
-our $VERSION = '1.09';
+our $VERSION = '1.10';
 
 # -----------------------------------------------
 
@@ -53,7 +53,7 @@ sub new
 	my($class, %arg) = @_;
 	my($self)        = bless({}, $class);
 
-	$self -> config(App::Office::Contacts::Util::Config -> new -> config);
+	$self -> config($self -> config || App::Office::Contacts::Util::Config -> new -> config);
 
 	return $self;
 

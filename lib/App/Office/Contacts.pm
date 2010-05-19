@@ -13,7 +13,7 @@ use Log::Dispatch::DBI;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.09';
+our $VERSION = '1.10';
 
 # -----------------------------------------------
 
@@ -968,18 +968,9 @@ You can search for all such special code with 'ack Special'. ack is part of App:
 
 =head1 Support
 
-Log bug reports with RT.
+Email the author, or log a bug on RT:
 
-The mailing list details are:
-
-	Mail list: cgi-office@X
-	Help address: cgi-office-help@X
-	Subscription address: cgi-office-subscribe@X
-	Unsubscription address: cgi-office-unsubscribe@X
-
-where X is as per my email address at the bottom of my home page (below).
-
-On-line help for ezmlm: http://www.ezmlm.org/manual/
+https://rt.cpan.org/Public/Dist/Display.html?Name=App-Office-Contacts
 
 =head1 Author
 
