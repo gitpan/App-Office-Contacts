@@ -53,20 +53,17 @@ has verbose =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.10';
+our $VERSION = '1.12';
 
 # -----------------------------------------------
 
 sub BUILD
 {
-	my($self)   = @_;
-	my($config) = $self -> log_dispatch_conf -> config;
+	my($self) = @_;
 
 	$self -> db(App::Office::Contacts::Database -> new);
 	$self -> creator(DBIx::Admin::CreateTable -> new(dbh => $self -> db -> dbh, verbose => 0) );
 	$self -> time_option($self -> creator -> db_vendor =~ /(?:MySQL|Postgres)/i ? '(0) without time zone' : '');
-
-	return $self;
 
 }	# End of BUILD.
 
@@ -1149,17 +1146,14 @@ sub report
 
 sub report_all_tables
 {
-	my($self)       = @_;
-	my($table_name) = 'table_names';
-	my($data)       = $self -> read_a_file("$table_name.txt");
+	my($self) = @_;
+	my($data) = $self -> db -> dbh -> selectall_arrayref('select name from table_names');
 
 	my($count);
-	my(@field);
 
-	for (sort @$data)
+	for (@$data)
 	{
-		@field = split(/\s*,\s*/, $_);
-		$count = $self -> db -> dbh -> selectrow_hashref("select count(*) from $field[0]");
+		$count = $self -> db -> dbh -> selectrow_hashref("select count(*) from $$_[0]");
 		$count = $count ? $$count{'count'} : 0;
 
 		print "Table: $field[0]. Row count: $count. \n";

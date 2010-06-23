@@ -13,7 +13,7 @@ use Log::Dispatch::DBI;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.10';
+our $VERSION = '1.12';
 
 # -----------------------------------------------
 
@@ -23,10 +23,10 @@ sub build_about_html
 
 	$self -> log(debug => 'Entered build_about_html');
 
-	my($config) = $self -> param('config');
-	my($js)     = $self -> load_tmpl('display.detail.js');	my($template) = $self -> load_tmpl('table.even.odd.tmpl', loop_context_vars => 1);
-	my($user)   = $user_id ? $self -> param('db') -> person -> get_person($user_id, $user_id) : [{name => 'N/A'}];
-	$user       = $$user[0]{'name'} ? $$user[0]{'name'} : 'No-one is logged on';
+	my($config)   = $self -> param('config');
+	my($template) = $self -> load_tmpl('table.even.odd.tmpl', loop_context_vars => 1);
+	my($user)     = $user_id ? $self -> param('db') -> person -> get_person($user_id, $user_id) : [{name => 'N/A'}];
+	$user         = $$user[0]{'name'} ? $$user[0]{'name'} : 'No-one is logged on';
 
 	my(@tr);
 
@@ -415,6 +415,8 @@ The scripts discussed here, I<contacts.cgi> and I<contacts.psgi>, are shipped wi
 
 A classic CGI script, I<contacts.cgi>:
 
+	#!/usr/bin/perl
+
 	use strict;
 	use warnings;
 
@@ -464,7 +466,7 @@ A L<Plack> script, I<contacts.psgi>:
 	builder
 {
 		enable "Plack::Middleware::Static",
-		path => qr!^/(assets|yui)/!,
+		path => qr!^/(assets|favicon|yui)/!,
 		root => '/var/www';
 		$app;
 	};
@@ -494,7 +496,7 @@ help on unpacking and installing distros.
 
 =head2 A note to beginners
 
-At various places I refer to a file, lib/CGI/Office/Contacts/.htoffice.contacts.conf,
+At various places I refer to a file, lib/App/Office/Contacts/.htoffice.contacts.conf,
 shipped in this distro.
 
 Please realize that if you edit this file, you must ensure the copy you are editing
@@ -523,7 +525,7 @@ of YUI.
 
 Currently, I have no plans to port this code to V 3 of YUI.
 
-See lib/CGI/Office/Contacts/.htoffice.contacts.conf, around line 70, where it specifies the
+See lib/App/Office/Contacts/.htoffice.contacts.conf, around line 70, where it specifies the
 URL used by the code to access the YUI.
 
 =head2 The database server
@@ -543,14 +545,20 @@ Then, to view the database after using the shipped Perl scripts to create and po
 	(password...)
 	psql>...
 
-If you use another server, patch lib/CGI/Office/Contacts/.htoffice.contacts.conf,
+If you use another server, patch lib/App/Office/Contacts/.htoffice.contacts.conf,
 around lines 22 and 36, where it specifies the database DSN and the CGI::Session driver.
 
 =head1 Installing the module
 
 Install C<App::Office::Contacts> as you would for any C<Perl> module:
 
-Run I<cpan>: shell>sudo cpan App::Office::Contacts
+Run:
+
+	cpanm App::Office::Contacts
+
+or run
+
+	sudo cpan App::Office::Contacts
 
 or unpack the distro, and then either:
 
@@ -568,15 +576,15 @@ or:
 
 Either way, you need to install all the other files which are shipped in the distro.
 
-=head2 Install the C<HTML::Template> files.
+=head2 Install the C<HTML::Template> files
 
 Copy the distro's htdocs/assets/ directory to your web server's doc root.
 
 Specifically, my doc root is /var/www/, so I end up with /var/www/assets/.
 
-=head2 Install the FAQ web page.
+=head2 Install the FAQ web page
 
-In lib/CGI/Office/Contacts/.htoffice.contacts.conf there is a line:
+In lib/App/Office/Contacts/.htoffice.contacts.conf there is a line:
 
 	program_faq_url=/contacts.faq.html
 
@@ -588,7 +596,7 @@ docs/pod/contacts.faq.pod.
 So, copy the latter into your web server's doc root, or generate another version
 of the page, using docs/pod/contacts.faq.pod as input.
 
-=head2 Install the trivial CGI script and the L<Plack> script
+=head2 Install the trivial CGI script and the Plack script
 
 Copy the distro's httpd/cgi-bin/office/ directory to your web server's cgi-bin/ directory,
 and make I<contacts.cgi> executable.
@@ -607,7 +615,7 @@ All such programs are in the scripts/ directory.
 
 After unpacking the distro, create and populate the database:
 
-	shell>cd CGI-Office-Contacts-1.00
+	shell>cd App-Office-Contacts-1.00
 	# Naturally, you only drop /pre-existing/ tables :-),
 	# so use drop.tables.pl later, when re-building the db.
 	#shell>perl -Ilib scripts/drop.tables.pl -v
@@ -701,8 +709,8 @@ Lastly, the occupations per person code is not being shipped yet.
 
 Nope, wrong again. These subs are meant to be called twice.
 
-	ron@zoe:~/perl.modules/CGI-Office-Contacts$ ack build_notes_js
-	lib/CGI/Office/Contacts/Controller/Initialize.pm
+	ron@zoe:~/perl.modules/App-Office-Contacts$ ack build_notes_js
+	lib/App/Office/Contacts/Controller/Initialize.pm
 	104: my($organization_notes_js)  = $self -> param('view') -> notes -> build_notes_js('organization');
 	105: my($person_notes_js)        = $self -> param('view') -> notes -> build_notes_js('person');
 
@@ -752,13 +760,13 @@ The sample scripts I<contacts.cgi> and I<contacts> use
 
 	prefix => 'App::Office::Contacts::Controller'
 
-so the files in lib/CGI/Office/Contacts/Controller are the modules which are run to respond
+so the files in lib/App/Office/Contacts/Controller are the modules which are run to respond
 to http requests.
 
-Files in lib/CGI/Office/Contacts/View implement views, and those in lib/CGI/Office/Contacts/Database
+Files in lib/App/Office/Contacts/View implement views, and those in lib/App/Office/Contacts/Database
 implement the model.
 
-Files in lib/CGI/Office/Contacts/Util are a mixture:
+Files in lib/App/Office/Contacts/Util are a mixture:
 
 =over 4
 
@@ -797,7 +805,7 @@ I have switched to plurals for the names of database tables though.
 
 See docs/contacts.schema.png.
 
-The file was created with scripts/schema.sh, which uses dbigraph.pl.
+The file was created with dbigraph.pl.
 
 dbigraph.pl ships with C<GraphViz::DBI>. I patched it to use C<GraphViz::DBI::General>.
 

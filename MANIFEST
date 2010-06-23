@@ -22,6 +22,7 @@ data/table_names.txt
 data/titles.txt
 data/yes_nos.txt
 docs/contacts.schema.png
+docs/html/contacts.faq.html
 docs/pod/contacts.faq.pod
 docs/pod/contacts.notes.pod
 htdocs/assets/css/app/office/contacts/table.even.odd.css
@@ -91,7 +92,6 @@ scripts/drop.tables.pl
 scripts/populate.fake.data.pl
 scripts/populate.tables.pl
 scripts/report.tables.pl
-scripts/schema.sh
 t/pod.t
 t/test.build.t.slow2run
 t/test.makefile.t.slow2run

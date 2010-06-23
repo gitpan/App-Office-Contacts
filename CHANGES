@@ -1,6 +1,20 @@
 Revision history for Perl extension App::Office::Contacts.
 
-1.10  Wed May 19  11:11:00 2010
+1.12  Wed Jun 23 13:29:00 2010
+	- Fix logic error in Create.pm.report_all_tables(). I was getting a list of
+	  table names from a file in the distro, the same way I do when populating
+	  tables at installation time. But, this file may not be available at run
+	  time after installation.
+	- No longer ship scripts/schema.sh. I use dbigraph.pl from GraphViz::DBI,
+	  modified to use GraphViz::DBI::General (which subclasses GraphViz::DBI).
+
+1.11  Thu Jun  3 17:23:00 2010
+	- Fix typos arising after I changed the name of the module
+		from CGI::Office::* to App::Office::*. This patch was lost
+		when I replaced Debian testing with lenny on my laptop.
+	- Ship docs/html/contacts.faq.html, as previously documented.
+
+1.10  Wed May 19 11:11:00 2010
 	- Update comments re starman usage in contacts.psgi.
 	- Chop mailing list stuff from support.
 	- Update version numbers in Build.PL and Makefile.PL.
