@@ -53,7 +53,7 @@ has verbose =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 
 # -----------------------------------------------
 
@@ -1153,10 +1153,10 @@ sub report_all_tables
 
 	for (@$data)
 	{
-		$count = $self -> db -> dbh -> selectrow_hashref("select count(*) from $$_[0]");
+		$count = $self -> db -> dbh -> selectrow_hashref("select count(*) as count from $$_[0]");
 		$count = $count ? $$count{'count'} : 0;
 
-		print "Table: $field[0]. Row count: $count. \n";
+		print "Table: $$_[0]. Row count: $count. \n";
 	}
 
 }	# End of report_all_tables.

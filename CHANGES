@@ -1,5 +1,10 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.13  Thu Jun 24 14:38:00 2010
+	- Fix syntax error.
+	- Use 'select count(*) as count' rather than just 'select count(*)' to avoid
+	  differences between Postgres and SQLite.
+
 1.12  Wed Jun 23 13:29:00 2010
 	- Fix logic error in Create.pm.report_all_tables(). I was getting a list of
 	  table names from a file in the distro, the same way I do when populating
