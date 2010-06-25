@@ -19,7 +19,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 
@@ -115,7 +115,6 @@ sub person_autocomplete
 
 	$self -> log(debug => 'Entered person_autocomplete');
 
-	my($json) = JSON::XS -> new;
 	my($name) = $self -> query -> param('name') || ''; # TODO. Was $self -> param('query').
 	my($list) = $self -> param('db') -> person -> get_people_via_name_prefix($name);
 
@@ -124,7 +123,7 @@ sub person_autocomplete
 		$list = [ [$name, 0] ];
 	}
 
-	return $json -> encode({results => [map{ {name => $$_[0], id => $$_[1]} } @$list]});
+	return JSON::XS -> new -> utf8 -> encode({results => [map{ {name => $$_[0], id => $$_[1]} } @$list]});
 
 } # End of person_autocomplete.
 

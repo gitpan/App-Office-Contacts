@@ -1,10 +1,8 @@
 package App::Office::Contacts::View::Role::Report;
 
-use JSON::XS;
-
 use Moose::Role;
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 

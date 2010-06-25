@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::View::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 

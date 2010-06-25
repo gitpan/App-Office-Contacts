@@ -12,7 +12,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 
@@ -24,7 +24,6 @@ sub display
 
 	return if ($self -> validate_post == 0);
 
-	my($json)          = JSON::XS -> new;
 	my($name)          = $self -> query -> param('target') || '';
 	my($organizations) = $self -> param('db') -> organization -> get_organizations($self -> param('user_id'), $name);
 	my($people)        = $self -> param('db') -> person -> get_people($self -> param('user_id'), $name);
@@ -48,7 +47,7 @@ sub display
 		$result = {results => [{name => "No names match '$name'"}]};
 	}
 
-	return $json -> encode($result);
+	return JSON::XS -> new -> utf8 -> encode($result);
 
 } # End of display.
 

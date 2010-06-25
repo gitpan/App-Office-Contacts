@@ -14,7 +14,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 
@@ -36,7 +36,7 @@ sub display
 
 	my($report) = $self -> param('view') -> report -> generate_report($input, $report_name);
 
-	return JSON::XS -> new -> encode({results => $report});
+	return JSON::XS -> new -> utf8 -> encode({results => $report});
 
 } # End of display.
 

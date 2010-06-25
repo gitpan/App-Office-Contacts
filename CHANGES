@@ -1,5 +1,8 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.14  Fri Jun 25 11:15:00 2010
+	- Change all JSON::XS->new->encode(...) to JSON::XS->new->utf8->encode(...).
+
 1.13  Thu Jun 24 14:38:00 2010
 	- Fix syntax error.
 	- Use 'select count(*) as count' rather than just 'select count(*)' to avoid

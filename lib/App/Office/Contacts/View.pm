@@ -16,7 +16,7 @@ has report       => (is => 'rw', isa => 'Any');
 
 use namespace::autoclean;
 
-our $VERSION = '1.13';
+our $VERSION = '1.14';
 
 # -----------------------------------------------
 
