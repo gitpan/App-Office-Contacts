@@ -4,6 +4,7 @@ use App::Office::Contacts::View::Notes;
 use App::Office::Contacts::View::Organization;
 use App::Office::Contacts::View::Person;
 use App::Office::Contacts::View::Report;
+use App::Office::Contacts::View::Search;
 
 use Moose;
 
@@ -13,10 +14,11 @@ has notes        => (is => 'rw', isa => 'App::Office::Contacts::View::Notes');
 has organization => (is => 'rw', isa => 'App::Office::Contacts::View::Organization');
 has person       => (is => 'rw', isa => 'App::Office::Contacts::View::Person');
 has report       => (is => 'rw', isa => 'Any');
+has search       => (is => 'rw', isa => 'App::Office::Contacts::View::Search');
 
 use namespace::autoclean;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -43,7 +45,7 @@ sub build_display_detail_js
 
 	my($js) = $self -> load_tmpl('display.detail.js');
 
-	$js -> param(form_action => $self -> script_name);
+	$js -> param(form_action => $self -> form_action);
 	$js -> param(sid         => $self -> session -> id);
 
 	return $js -> output;
@@ -61,7 +63,7 @@ sub init
 	$self -> notes(App::Office::Contacts::View::Notes -> new
 	(
 		db          => $self -> db,
-		script_name => $self -> script_name,
+		form_action => $self -> form_action,
 		session     => $self -> session,
 		tmpl_path   => $self -> tmpl_path,
 	) );
@@ -69,7 +71,7 @@ sub init
 	$self -> organization(App::Office::Contacts::View::Organization -> new
 	(
 		db          => $self -> db,
-		script_name => $self -> script_name,
+		form_action => $self -> form_action,
 		session     => $self -> session,
 		tmpl_path   => $self -> tmpl_path,
 	) );
@@ -77,7 +79,7 @@ sub init
 	$self -> person(App::Office::Contacts::View::Person -> new
 	(
 		db          => $self -> db,
-		script_name => $self -> script_name,
+		form_action => $self -> form_action,
 		session     => $self -> session,
 		tmpl_path   => $self -> tmpl_path,
 	) );
@@ -85,7 +87,15 @@ sub init
 	$self -> report(App::Office::Contacts::View::Report -> new
 	(
 		db          => $self -> db,
-		script_name => $self -> script_name,
+		form_action => $self -> form_action,
+		session     => $self -> session,
+		tmpl_path   => $self -> tmpl_path,
+	) );
+
+	$self -> search(App::Office::Contacts::View::Search -> new
+	(
+		db          => $self -> db,
+		form_action => $self -> form_action,
 		session     => $self -> session,
 		tmpl_path   => $self -> tmpl_path,
 	) );

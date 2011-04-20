@@ -1,7 +1,8 @@
 package App::Office::Contacts;
 
 use parent 'CGI::Application';
-use common::sense;
+use strict;
+use warnings;
 
 use CGI::Session;
 
@@ -13,7 +14,7 @@ use Log::Dispatch::DBI;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -138,34 +139,9 @@ if (calendar_element !== null)
 }
 
 EJS
-
 	return $head_init;
 
 } # End of build_head_init.
-
-# -----------------------------------------------
-
-sub build_search_tab
-{
-	my($self) = @_;
-
-	$self -> log(debug => 'Entered build_search_tab');
-
-	my($search_js)   = $self -> load_tmpl('search.js');
-	my($search_html) = $self -> load_tmpl('search.tmpl');
-
-	$search_js -> param(form_action => $self -> script_name);
-	$search_js -> param(sid         => $self -> param('session') -> id);
-	$search_html -> param(sid       => $self -> param('session') -> id);
-
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$search_html = $search_html -> output;
-	$search_html =~ s/\n//g;
-
-	return ($search_js -> output, $search_html);
-
-} # End of build_search_tab.
 
 # -----------------------------------------------
 
@@ -179,7 +155,7 @@ sub build_web_page
 	# because, with AJAX, we only need it the first time the script is run.
 
 	my($page)       = $self -> load_tmpl('web.page.tmpl');
-	my(@search_tab) = $self -> build_search_tab;
+	my(@search_tab) = $self -> param('view') -> search -> build_search_tab;
 
 	$page -> param(css_url   => ${$self -> param('config')}{'css_url'});
 	$page -> param(head_init => $self -> build_head_init($search_tab[1]) );
@@ -189,48 +165,6 @@ sub build_web_page
 	return $page -> output;
 
 } # End of build_web_page.
-
-# -----------------------------------------------
-
-sub generate_cookie
-{
-	my($self, $cookie_name) = @_;
-
-	return; # Rig.
-
-	$self -> log(debug => "Entered generate_cookie: $cookie_name");
-
-	# Ensure the Initialize run mode outputs a cookie.
-
-	if ($self -> param('app') eq '')
-	{
-		my($cookie) = $self -> query -> cookie(-name => $cookie_name, -value => $self -> generate_digest($cookie_name) );
-
-		$self -> header_add(-cookie => $cookie);
-	}
-
-} # End of generate_cookie.
-
-# -----------------------------------------------
-
-sub generate_digest
-{
-	my($self, $cookie_name) = @_;
-	my($digest) = Digest::SHA -> new(256);
-	my($uuid)   = Data::UUID -> new -> create_str;
-
-	$digest -> add($uuid);
-
-	$digest = $digest -> hexdigest;
-
-	$self -> log(debug => "UUID:   $uuid");
-	$self -> log(debug => "Digest: $digest");
-
-	$self -> param('session') -> param($cookie_name => $digest);
-
-	return $digest;
-
-} # End of generate_digest.
 
 # -----------------------------------------------
 
@@ -313,35 +247,6 @@ sub log
 
 # -----------------------------------------------
 
-sub script_name
-{
-	my($self) = @_;
-
-	my($env);
-	my($script_name);
-
-	# Are we running under Plack?
-
-	if ($env = $self -> query -> can('env') )
-	{
-		# Yes.
-
-		$env         = $self -> query -> env;
-		$script_name = $$env{SCRIPT_NAME};
-	}
-	else
-	{
-		# No.
-
-		$script_name = $ENV{SCRIPT_NAME};
-	}
-
-	return $script_name;
-
-} # End of script_name.
-
-# -----------------------------------------------
-
 sub teardown
 {
 	my($self) = @_;
@@ -349,57 +254,6 @@ sub teardown
 	$self -> log(debug => 'Entered teardown');
 
 } # End of teardown.
-
-# -----------------------------------------------
-# http://www.freedom-to-tinker.com/blog/wzeller/popular-websites-vulnerable-cross-site-request-forgery-attacks
-
-sub validate_post
-{
-	my($self, $cookie_name)  = @_;
-	my($q)     = $self -> query;
-	my(@p)     = $q -> param;
-	my($valid) = 1; # Valid.
-
-	return $valid; # Rig.
-
-	$self -> log(debug => "Entered validate_post: $cookie_name");
-
-	# Ensure CGI params are only submitted with POST requests.
-
-	if ( ($#p >= 0) && ($q -> request_method ne 'POST') )
-	{
-		$self -> log(warning => 'Request method not POST but CGI parameters (i.e. ' . join(', ', @p) . ') present');
-
-		$valid = 0; # Invalid.
-	}
-
-	# Ensure the digest param matches the cookie.
-
-	if ($valid && ($#p >= 0) )
-	{
-		my($cookie_digest)  = $q -> cookie($cookie_name);
-		my($session_digest) = $self -> param('session') -> param($cookie_name);
-
-		if ($cookie_digest ne $session_digest)
-		{
-			$self -> log(warning => 'Cookie digest does not match session digest');
-			$self -> log(warning => "Cookie:  $cookie_digest");
-			$self -> log(warning => "Session: $session_digest");
-
-			$valid = 0; # Invalid.
-		}
-	}
-
-	if ($valid == 0)
-	{
-		$self -> log(warning => 'Redirecting to ' . $q -> url);
-		$self -> header_type('redirect');
-		$self -> header_props(-url => $q -> url);
-	}
-
-	return $valid;
-
-} # End of validate_post.
 
 # -----------------------------------------------
 
@@ -415,7 +269,7 @@ The scripts discussed here, I<contacts.cgi> and I<contacts.psgi>, are shipped wi
 
 A classic CGI script, I<contacts.cgi>:
 
-	#!/usr/bin/perl
+	#!/usr/bin/env perl
 
 	use strict;
 	use warnings;
@@ -441,7 +295,7 @@ A classic CGI script, I<contacts.cgi>:
 
 A L<Plack> script, I<contacts.psgi>:
 
-	#!/usr/bin/perl
+	#!/usr/bin/env perl
 
 	use strict;
 	use warnings;
@@ -550,6 +404,8 @@ around lines 22 and 36, where it specifies the database DSN and the CGI::Session
 
 =head1 Installing the module
 
+=head2 The Module Itself
+
 Install C<App::Office::Contacts> as you would for any C<Perl> module:
 
 Run:
@@ -575,6 +431,39 @@ or:
 	make install
 
 Either way, you need to install all the other files which are shipped in the distro.
+
+=head2 The Configuration File
+
+Next, tell L<App::Office::Contacts> your values for some options.
+
+For that, see config/.htoffice.contacts.conf.
+
+If you are using Build.PL, running Build (without parameters) will run scripts/copy.config.pl,
+as explained next.
+
+If you are using Makefile.PL, running make (without parameters) will also run scripts/copy.config.pl.
+
+Either way, before editing the config file, ensure you run scripts/copy.config.pl. It will copy
+the config file using L<File::HomeDir>, to a directory where the run-time code in
+L<App::Office::Contacts> will look for it.
+
+	shell>cd App-Office-Contacts-1.00
+	shell>perl scripts/copy.config.pl
+
+Under Debian, this directory will be $HOME/.perl/App-Office-Contacts/. When you
+run copy.config.pl, it will report where it has copied the config file to.
+
+Check the docs for L<File::HomeDir> to see what your operating system returns for a
+call to my_dist_config().
+
+The point of this is that after the module is installed, the config file will be
+easily accessible and editable without needing permission to write to the directory
+structure in which modules are stored.
+
+That's why L<File::HomeDir> and L<Path::Class> are pre-requisites for this module.
+
+All modules which ship with their own config file are advised to use the same mechanism
+for storing such files.
 
 =head2 Install the C<HTML::Template> files
 

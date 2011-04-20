@@ -2,7 +2,7 @@ package App::Office::Contacts::View::Role::Report;
 
 use Moose::Role;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -45,7 +45,7 @@ sub build_update_report_js
 
 	my($js) = $self -> load_tmpl('report.js');
 
-	$js -> param(form_action => $self -> script_name);
+	$js -> param(form_action => $self -> form_action);
 
 	return $js -> output;
 

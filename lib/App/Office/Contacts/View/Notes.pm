@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::View::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -19,7 +19,7 @@ sub build_notes_js
 	my($js) = $self -> load_tmpl('update.notes.js');
 
 	$js -> param(context     => $context);
-	$js -> param(form_action => $self -> script_name);
+	$js -> param(form_action => $self -> form_action);
 
 	return $js -> output;
 

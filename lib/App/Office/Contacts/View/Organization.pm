@@ -6,7 +6,7 @@ extends 'App::Office::Contacts::View::Base';
 
 use namespace::autoclean;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -58,7 +58,7 @@ sub build_add_organization_js
 	my($js) = $self -> load_tmpl('update.organization.js');
 
 	$js -> param(context     => 'add');
-	$js -> param(form_action => $self -> script_name);
+	$js -> param(form_action => $self -> form_action);
 
 	return $js -> output;
 
@@ -159,7 +159,7 @@ sub build_update_organization_js
 	my($js) = $self -> load_tmpl('update.organization.js');
 
 	$js -> param(context     => 'update');
-	$js -> param(form_action => $self -> script_name);
+	$js -> param(form_action => $self -> form_action);
 
 	return $js -> output;
 

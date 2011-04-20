@@ -6,11 +6,11 @@ use DBI;
 
 use DBIx::Admin::CreateTable;
 
-use File::Slurp; # For read_file().
-
-use FindBin::Real;
+use FindBin;
 
 use Moose;
+
+use Perl6::Slurp; # For slurp().
 
 extends 'App::Office::Contacts::Base';
 
@@ -53,7 +53,7 @@ has verbose =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -1116,10 +1116,8 @@ sub populate_yes_nos_table
 sub read_a_file
 {
 	my($self, $input_file_name) = @_;
-	$input_file_name = FindBin::Real::Bin . "/../data/$input_file_name";
-	my(@line)        = read_file($input_file_name);
-
-	chomp @line;
+	$input_file_name = "$FindBin::Bin/../data/$input_file_name";
+	my(@line)        = slurp($input_file_name, {chomp => 1});
 
 	return [grep{! /^$/ && ! /^#/} map{s/^\s+//; s/\s+$//; $_} @line];
 

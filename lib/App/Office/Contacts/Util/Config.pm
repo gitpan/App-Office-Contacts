@@ -1,32 +1,55 @@
 package App::Office::Contacts::Util::Config;
 
+use strict;
+use warnings;
+
 use Config::Tiny;
+
+use File::HomeDir;
 
 use Moose;
 
-has config           => (is => 'rw', isa => 'Any', required => 0);
-has config_file_path => (is => 'rw', isa => 'Str', required => 0);
-has section          => (is => 'rw', isa => 'Str', required => 0);
+use Path::Class;
+
+has config =>
+(
+ is       => 'rw',
+ isa      => 'Any',
+ required => 0,
+);
+
+has config_file_path =>
+(
+ is       => 'rw',
+ isa      => 'Path::Class::File',
+ required => 0,
+);
+
+has config_name =>
+(
+ default  => '.htoffice.contacts.conf',
+ is       => 'rw',
+ isa      => 'Str',
+ required => 0,
+);
+
+has section =>
+(
+ is       => 'rw',
+ isa      => 'Str',
+ required => 0,
+);
 
 use namespace::autoclean;
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
 sub BUILD
 {
 	my($self) = @_;
-	my($name) = '.htoffice.contacts.conf';
-
-	my($path);
-
-	for (keys %INC)
-	{
-		next if ($_ !~ m|App/Office/Contacts/Util/Config.pm|);
-
-		($path = $INC{$_}) =~ s|Util/Config.pm|$name|;
-	}
+	my($path) = Path::Class::file(File::HomeDir -> my_dist_config('App-Office-Contacts'), $self -> config_name);
 
 	$self -> init($path);
 
@@ -43,6 +66,12 @@ sub init
 	# Check [global].
 
 	$self -> config(Config::Tiny -> read($path) );
+
+	if (Config::Tiny -> errstr)
+	{
+		die Config::Tiny -> errstr;
+	}
+
 	$self -> section('global');
 
 	if (! ${$self -> config}{$self -> section})

@@ -1,11 +1,12 @@
 package App::Office::Contacts::Controller::Initialize;
 
 use parent 'App::Office::Contacts::Controller';
-use common::sense;
+use strict;
+use warnings;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -101,10 +102,6 @@ sub display
 	my($cookie_name) = 'contacts';
 
 	$self -> log(debug => 'Entered display');
-
-	return 'Invalid cookie digest' if ($self -> validate_post($cookie_name) == 0);
-
-	$self -> generate_cookie($cookie_name);
 
 	return $self -> build_web_page;
 

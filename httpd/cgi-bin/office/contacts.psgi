@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Run with:
 # starman -l 127.0.0.1:5003 --workers 1 httpd/cgi-bin/office/contacts.psgi &
@@ -27,7 +27,7 @@ my($app) = CGI::Application::Dispatch -> as_psgi
 
 builder
 {
-	enable "Plack::Middleware::Static",
+	enable 'Static',
 	path => qr!^/(assets|favicon|yui)/!,
 	root => '/var/www';
 	$app;

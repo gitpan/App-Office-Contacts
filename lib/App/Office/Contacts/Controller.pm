@@ -1,7 +1,8 @@
 package App::Office::Contacts::Controller;
 
 use parent 'App::Office::Contacts';
-use common::sense;
+use strict;
+use warnings;
 
 use App::Office::Contacts::Database;
 use App::Office::Contacts::Util::Config;
@@ -11,7 +12,7 @@ use Log::Dispatch;
 
 # We don't use Moose because we isa CGI::Application.
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -44,7 +45,7 @@ sub cgiapp_prerun
 	$self -> param(view => App::Office::Contacts::View -> new
 	(
 		db          => $self -> param('db'),
-		script_name => $self -> script_name,
+		form_action => $self -> query -> url(-absolute => 1),
 		session     => $self -> param('session'),
 		tmpl_path   => $self -> tmpl_path,
 	) );

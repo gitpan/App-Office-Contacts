@@ -1,5 +1,23 @@
 Revision history for Perl extension App::Office::Contacts.
 
+1.16  Tue Nov 16 15:47:00 2010
+	- Switch from FindBin::Real to FindBin (which is in core).
+	- Replace /usr/bin/perl with /usr/bin/env perl.
+	- Replace common::sense with use strict and use warnings, to get uninit var warnings.
+	- Move lib/App-Office-Contacts/lib/App/Office/Contacts/.htoffice.contacts.conf to config/.
+	- Change default template path to /dev/shm/html/assets/templates/app/office/contacts.
+	- Change name of default template path from tmpl_path to template_path, as part of adopting
+	  Text::Xslate.
+	- Add scripts/copy.config.pl to copy .htoffice.contacts.conf to ~/.perl/App-Office-Contacts/.
+	- Add missing pre-reqs to Build.PL and Makefile.PL.
+	- Make Build.PL and Makefile.PL run scripts/copy.config.pl.
+
+1.15  Wed Sep 22 10:00:00 2010
+	- Replace sub script_name() with $self -> query -> url(-absolute => 1).
+	- Shift some code into a new module, App::Office::CMS::View::Search. This means a view
+	  now hasa search.
+	- Chop subs generate_cookie(), generate_digest() and validate_post(). See V 1.09 below.
+
 1.14  Fri Jun 25 11:15:00 2010
 	- Change all JSON::XS->new->encode(...) to JSON::XS->new->utf8->encode(...).
 
@@ -29,7 +47,7 @@ Revision history for Perl extension App::Office::Contacts.
 	- Ensure config code is only called once (App::Office::Contacts::Util::LogConfig).
 
 1.09  Tue Apr 20  8:38:00 2010
-	- Comment out the processing which checks for CSRF, since I excountered
+	- Comment out the processing which checks for CSRF, since I encountered
 		a case where it did not work.
 
 1.08  Fri Apr 16  8:52:00 2010

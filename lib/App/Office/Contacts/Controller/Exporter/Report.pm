@@ -1,6 +1,7 @@
 package App::Office::Contacts::Controller::Exporter::Report;
 
-use common::sense;
+use strict;
+use warnings;
 
 use App::Office::Contacts::Util::Validator;
 
@@ -14,7 +15,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -24,8 +25,6 @@ sub display
 	my($report_name) = $self -> param('id');
 
 	$self -> log(debug => "Entered display: $report_name");
-
-	return if ($self -> validate_post == 0);
 
 	my($input) = App::Office::Contacts::Util::Validator -> new
 	(

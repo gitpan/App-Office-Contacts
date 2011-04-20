@@ -1,6 +1,7 @@
 package App::Office::Contacts::Controller::Exporter::Search;
 
-use common::sense;
+use strict;
+use warnings;
 
 use JSON::XS;
 
@@ -12,7 +13,7 @@ use Sub::Exporter -setup =>
 	/],
 };
 
-our $VERSION = '1.14';
+our $VERSION = '1.16';
 
 # -----------------------------------------------
 
@@ -21,8 +22,6 @@ sub display
 	my($self) = @_;
 
 	$self -> log(debug => 'Entered display');
-
-	return if ($self -> validate_post == 0);
 
 	my($name)          = $self -> query -> param('target') || '';
 	my($organizations) = $self -> param('db') -> organization -> get_organizations($self -> param('user_id'), $name);

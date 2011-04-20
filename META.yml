@@ -6,8 +6,9 @@ build_requires:
   Test::Pod: 1.41
   Test::Simple: 0.94
 configure_requires:
-  Module::Build: 0.36
-generated_by: 'Module::Build version 0.3607'
+  Module::Build: 0.38
+dynamic_config: 1
+generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.110580'
 license: artistic
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -16,111 +17,113 @@ name: App-Office-Contacts
 provides:
   App::Office::Contacts:
     file: lib/App/Office/Contacts.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Base:
     file: lib/App/Office/Contacts/Base.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller:
     file: lib/App/Office/Contacts/Controller.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Exporter::Notes:
     file: lib/App/Office/Contacts/Controller/Exporter/Notes.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Exporter::Organization:
     file: lib/App/Office/Contacts/Controller/Exporter/Organization.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Exporter::Person:
     file: lib/App/Office/Contacts/Controller/Exporter/Person.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Exporter::Report:
     file: lib/App/Office/Contacts/Controller/Exporter/Report.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Exporter::Search:
     file: lib/App/Office/Contacts/Controller/Exporter/Search.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Initialize:
     file: lib/App/Office/Contacts/Controller/Initialize.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Notes:
     file: lib/App/Office/Contacts/Controller/Notes.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Organization:
     file: lib/App/Office/Contacts/Controller/Organization.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Person:
     file: lib/App/Office/Contacts/Controller/Person.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Report:
     file: lib/App/Office/Contacts/Controller/Report.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Controller::Search:
     file: lib/App/Office/Contacts/Controller/Search.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database:
     file: lib/App/Office/Contacts/Database.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Base:
     file: lib/App/Office/Contacts/Database/Base.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::EmailAddress:
     file: lib/App/Office/Contacts/Database/EmailAddress.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Notes:
     file: lib/App/Office/Contacts/Database/Notes.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Occupation:
     file: lib/App/Office/Contacts/Database/Occupation.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Organization:
     file: lib/App/Office/Contacts/Database/Organization.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Person:
     file: lib/App/Office/Contacts/Database/Person.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::PhoneNumber:
     file: lib/App/Office/Contacts/Database/PhoneNumber.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Database::Util:
     file: lib/App/Office/Contacts/Database/Util.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Util::Config:
     file: lib/App/Office/Contacts/Util/Config.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Util::Create:
     file: lib/App/Office/Contacts/Util/Create.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Util::LogConfig:
     file: lib/App/Office/Contacts/Util/LogConfig.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::Util::Validator:
     file: lib/App/Office/Contacts/Util/Validator.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View:
     file: lib/App/Office/Contacts/View.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Base:
     file: lib/App/Office/Contacts/View/Base.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Notes:
     file: lib/App/Office/Contacts/View/Notes.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Occupation:
     file: lib/App/Office/Contacts/View/Occupation.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Organization:
     file: lib/App/Office/Contacts/View/Organization.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Person:
     file: lib/App/Office/Contacts/View/Person.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Report:
     file: lib/App/Office/Contacts/View/Report.pm
-    version: 1.14
+    version: 1.16
   App::Office::Contacts::View::Role::Report:
     file: lib/App/Office/Contacts/View/Role/Report.pm
-    version: 1.14
+    version: 1.16
+  App::Office::Contacts::View::Search:
+    file: lib/App/Office/Contacts/View/Search.pm
+    version: 1.16
 requires:
-  CGI: 3.49
   CGI::Application: 4.31
   CGI::Application::Dispatch: 2.17
   CGI::Session: 4.42
@@ -130,22 +133,24 @@ requires:
   DBIx::Admin::CreateTable: 2.04
   Data::UUID: 1.203
   Data::Verifier: 0.31
-  Date::Simple: 3.03
   DateTime: 0.55
   Digest::SHA: 5.48
-  FindBin::Real: 1.05
+  File::Copy: 2.18
+  File::HomeDir: 0.97
+  FindBin: 1.49
   HTML::Template: 2.9
   JSON::XS: 2.29
   Log::Dispatch: 2.26
-  Log::Dispatch::Config: 1.03
+  Log::Dispatch::Configurator: 1
   Log::Dispatch::DBI: 0.02
   Moose: 0.98
+  Moose::Role: 1.21
   MooseX::LogDispatch: 1.2
-  Path::Class: 0.18
+  Path::Class: 0.23
+  Perl6::Slurp: 0.03
   Sub::Exporter: 0.982
-  common::sense: 3
   namespace::autoclean: 0.09
   parent: 0.218
 resources:
-  license: http://www.perlfoundation.org/artistic_license_1_0
-version: 1.14
+  license: http://opensource.org/licenses/artistic-license.php
+version: 1.16
