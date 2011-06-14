@@ -2,7 +2,7 @@ package App::Office::Contacts::View::Role::Report;
 
 use Moose::Role;
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 
 # -----------------------------------------------
 

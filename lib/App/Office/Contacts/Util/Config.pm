@@ -42,7 +42,7 @@ has section =>
 
 use namespace::autoclean;
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 
 # -----------------------------------------------
 

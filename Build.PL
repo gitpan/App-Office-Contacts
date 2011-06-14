@@ -38,7 +38,7 @@ $class -> new
 	 DBI                         => 1.611,
 	 DBIx::Admin::CreateTable    => 2.04,
 	 Digest::SHA                 => 5.48,
-	 File::Copy                  => 2.18,
+	 File::Copy                  => 2.14,
 	 File::HomeDir               => 0.97,
 	 FindBin                     => 1.49,
 	 HTML::Template              => 2.9,

@@ -18,7 +18,7 @@ has search       => (is => 'rw', isa => 'App::Office::Contacts::View::Search');
 
 use namespace::autoclean;
 
-our $VERSION = '1.16';
+our $VERSION = '1.17';
 
 # -----------------------------------------------
 
