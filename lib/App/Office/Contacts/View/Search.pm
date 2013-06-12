@@ -1,39 +1,186 @@
 package App::Office::Contacts::View::Search;
 
-use Moose;
+use strict;
+use utf8;
+use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
+
+use Moo;
 
 extends 'App::Office::Contacts::View::Base';
 
-use namespace::autoclean;
-
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
-sub build_search_tab
+sub build_search_html
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_search_tab');
+	$self -> db -> logger -> log(debug => 'View::Search.build_search_tab()');
 
-	my($search_js)   = $self -> load_tmpl('search.js');
-	my($search_html) = $self -> load_tmpl('search.tmpl');
+	# Make browser happy by turning the HTML into 1 long line.
 
-	$search_js -> param(form_action => $self -> form_action);
-	$search_js -> param(sid         => $self -> session -> id);
-	$search_html -> param(sid       => $self -> session -> id);
+	my($html) = $self -> db -> templater -> render
+		(
+			'search.tx',
+			{
+				sid => $self -> db -> session -> id,
+			}
+		);
+	$html =~ s/\n//g;
 
-	# Make YUI happy by turning the HTML into 1 long line.
+	return $html;
 
-	$search_html = $search_html -> output;
-	$search_html =~ s/\n//g;
-
-	return ($search_js -> output, $search_html);
-
-} # End of build_search_tab.
+} # End of build_search_html.
 
 # -----------------------------------------------
 
-__PACKAGE__ -> meta -> make_immutable;
+sub display
+{
+	my($self, $target, $result) = @_;
+
+	$self -> db -> logger -> log(debug => "View::Search.display($target, " . scalar @$result . ')');
+
+	my($html) = <<EOS;
+<div id="dt_example">
+<div id="container">
+<table class="display" id="result_table" cellpadding="0" cellspacing="0" border="0" width="100%">
+<thead>
+<tr>
+	<th>Count</th>
+	<th>Type</th>
+	<th>Role</th>
+	<th>Name</th>
+	<th>Surname</th>
+	<th>Email address</th>
+	<th>Email type</th>
+	<th>Phone</th>
+	<th>Phone type</th>
+</tr>
+</thead>
+<tbody>
+EOS
+	my($count) = 0;
+
+	my($class);
+
+	for my $row (@$result)
+	{
+		$class = (++$count % 2 == 1) ? 'odd gradeC' : 'even gradeC';
+
+		# Allow for contacts who simply don't have email or phone data.
+
+		$$row{email}      ||= '-';
+		$$row{email_type} ||= '-';
+		$$row{phone}      ||= '-';
+		$$row{phone_type} ||= '-';
+		$$row{surname}    ||= '-';
+		$html             .= <<EOS;
+<tr class="$class">
+	<td>$count</td>
+	<td>$$row{type}</td>
+	<td>$$row{role}</td>
+	<td>$$row{name}</td>
+	<td>$$row{surname}</td>
+	<td>$$row{email}</td>
+	<td>$$row{email_type}</td>
+	<td>$$row{phone}</td>
+	<td>$$row{phone_type}</td>
+</tr>
+EOS
+	}
+
+	$html .= <<EOS;
+</tbody>
+<tfoot>
+<tr>
+	<th>Count</th>
+	<th>Type</th>
+	<th>Role</th>
+	<th>Name</th>
+	<th>Surname</th>
+	<th>Email address</th>
+	<th>Email type</th>
+	<th>Phone</th>
+	<th>Phone type</th>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+EOS
+
+	return $html;
+
+} # End of display.
+
+# -----------------------------------------------
 
 1;
+
+=head1 NAME
+
+App::Office::Contacts::View::Search - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+Each instance of this class extends L<App::Office::Contacts::View::Base>, with these attributes:
+
+=over 4
+
+=item o (None)
+
+=back
+
+=head1 Methods
+
+=head2 build_search_html()
+
+Returns the HTML used to populate the 'Search' tab.
+
+=head2 display($target, $result)
+
+Returns the HTML which is the result of a search request from the user.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut

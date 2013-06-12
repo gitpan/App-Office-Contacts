@@ -1,4 +1,4 @@
-# name
+name
 -
 Client
 Contact
@@ -8,6 +8,7 @@ Donor
 Family
 Friend
 Guest
+Manager
 Other
 Patient
 Staff

@@ -8,13 +8,13 @@
 use strict;
 use warnings;
 
-use CGI::Application::Dispatch::PSGI;
+use CGI::Snapp::Dispatch;
 
 use Plack::Builder;
 
 # ---------------------
 
-my($app) = CGI::Application::Dispatch -> as_psgi
+my($app) = CGI::Snapp::Dispatch -> new -> as_psgi
 (
 	prefix => 'App::Office::Contacts::Controller',
 	table  =>
@@ -27,8 +27,9 @@ my($app) = CGI::Application::Dispatch -> as_psgi
 
 builder
 {
+	enable 'ContentLength';
 	enable 'Static',
-	path => qr!^/(assets|favicon|yui)/!,
-	root => '/var/www';
+	path => qr!^/(assets|favicon)!,
+	root => '/dev/shm/html';
 	$app;
 };

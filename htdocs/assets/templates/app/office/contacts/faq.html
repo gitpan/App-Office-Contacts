@@ -1,80 +1,108 @@
-<?xml version="1.0" ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+
 <head>
-<title>FAQ for the Contacts Manager</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+
+<title>Contacts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<style type="text/css" title="currentStyle">
+	@import "/assets/js/DataTables-1.9.4/media/css/demo_page.css";
+	@import "/assets/js/DataTables-1.9.4/media/css/demo_table.css";
+</style>
+
+<link rel="stylesheet" type="text/css" href="/assets/css/app/office/contacts/web.page.css">
+
 </head>
 
-<body style="background-color: white">
+<body>
 
+<h3 class="blue_centered">FAQ for Contacts</h3>
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
+<table class="display" id="occ_table_div" cellpadding="0" cellspacing="0" border="0">
+<thead>
+<tr>
+	<th align="left">Item</th>
+	<th align="left">Explanation</th>
+</tr>
+</thead>
+<tbody>
 
-<ul>
+<tr class="odd gradeC">
+<td>
+Adding staff
+</td>
+<td>
+You must use the Add Person tab to add a person to the database<br>
+before adding them as staff of an organization.
+</td>
+</tr>
 
-	<li><a href="#faq_for_the_contacts_manager">FAQ for the Contacts Manager</a></li>
-	<ul>
+<tr class="even gradeC">
+<td>
+Adding occupations
+</td>
+<td>
+Normally, you must use the Add Organization tab to add an organization to the database<br>
+before adding an occupation for someone at that organization.<br>
+You can however always use the dummy organization '-' (without the quotes) if desired.<br>
+Likewise there is a dummy occupation, also called '-', available if required.
+</td>
+</tr>
 
-		<li><a href="#a_note_about_the_calendars_used_in_reports">A note about the calendars used in reports</a></li>
-		<li><a href="#what_does_broadcast_mean">What does Broadcast mean?</a></li>
-		<li><a href="#what_does___hidden___mean_in_the_broadcast_menu">What does '(Hidden)' mean in the broadcast menu?</a></li>
-		<li><a href="#what_does_the_____character_mean_in_a_menu">What does the '-' character mean in a menu?</a></li>
-	</ul>
+<tr class="odd gradeC">
+<td>
+Deleting people<br>or organizations
+</td>
+<td>
+You can either set their Visibility to no-one, so that they stay in the database<br>
+or you can click the Delete button, and remove all references to them. See also the next point.
+</td>
+</tr>
 
-</ul>
+<tr class="even gradeC">
+<td>
+What is this Visibility thing?
+</td>
+<td>
+Visibility is the difference between public and private contacts (when people share databases). Values:<br>
+o Everyone: Such contacts will appear in other people's search results.<br>
+o Just me: Such contacts only appear in your search results.<br>
+o No-one: These contacts do not appear in anyone's search results.<br>
+</td>
+</tr>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<tr class="odd gradeC">
+<td>
+Which fields can I use autocomplete on?
+</td>
+<td>
+When entering staff, use autocomplete for Person name and Occupation title.<br>
+When entering occupations, use autocomplete for Organization name and Occupation title.<br>
+You need to type at least 2 characters to trigger the autocomplete code.
+</td>
+</tr>
 
-<p>
-</p>
-<h1><a name="faq_for_the_contacts_manager">FAQ for the Contacts Manager</a></h1>
-<p>
-</p>
-<h2><a name="a_note_about_the_calendars_used_in_reports">A note about the calendars used in reports</a></h2>
-<p>A calendar only works when a day is selected. You can tell a day is selected by it
-having a blue background.</p>
-<p>Both the From and To calendars default to today's date.</p>
-<p>However, if you navigate to another month, you must explicitly select a day by
-clicking on it.</p>
-<p>Lastly, for the Records report, the dates are always ignored.</p>
-<p>
-</p>
-<h2><a name="what_does_broadcast_mean">What does Broadcast mean?</a></h2>
-<p>Broadcast is the difference between private and public contacts.</p>
-<p>By setting Broadcast to Public, you permit other people's search results to show your contacts.</p>
-<p>By setting it to Private, you stop other people's search results displaying your contacts.</p>
-<p>So, by this means, you can keep some or all of your contact information private.</p>
-<p>
-</p>
-<h2><a name="what_does___hidden___mean_in_the_broadcast_menu">What does '(Hidden)' mean in the broadcast menu?</a></h2>
-<p>It means the entity has been deleted, but since entities are not really deleted (in case
-they need to be recovered), they are flagged as hidden, so the search code does not
-retrieve them.</p>
-<p>
-</p>
-<h2><a name="what_does_the_____character_mean_in_a_menu">What does the '-' character mean in a menu?</a></h2>
-<p>It depends on the menu:</p>
-<dl>
-<dt><strong><a name="communication_types_any_contact_method_i_e_no_restriction" class="item">Communication types: Any contact method, i.e. no restriction</a></strong></dt>
+<tr class="even gradeC">
+<td>
+What do I do about the 'Person already on file'<br>
+error when adding a new person?
+</td>
+<td>
+Simplest is to change their Preferred name, so that the combination of<br>
+'Preferred name + Surname' does not clash with that of the other person.
+</td>
+</tr>
 
-<dt><strong><a name="unknown" class="item">Genders: Either unknown (for people), or not applicable (for organizations)</a></strong></dt>
-
-<dt><strong><a name="occupation_titles_the_title_is_unknown" class="item">Occupation titles: The title is unknown</a></strong></dt>
-
-<dt><strong><a name="organization_names_the_name_is_this_is_the_special_organization_which_must_always_be_present" class="item">Organization names: The name is '-'. This is the special organization which must always be present</a></strong></dt>
-
-<dt><strong><a name="roles_the_role_is_unknown" class="item">Roles: The role is unknown</a></strong></dt>
-
-<dt><strong><a name="titles_the_title_is_unknown" class="item">Titles: The title is unknown</a></strong></dt>
-
-</dl>
+</tbody>
+<tfoot>
+<tr>
+	<th align="left">Item</th>
+	<th align="left">Explanation</th>
+</tr>
+</tfoot>
+</table>
 
 </body>
-
 </html>

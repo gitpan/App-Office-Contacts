@@ -1,181 +1,191 @@
 package App::Office::Contacts::View::Person;
 
-use Moose;
+use strict;
+use utf8;
+use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
+
+use Moo;
+
+use Text::Xslate 'mark_raw';
 
 extends 'App::Office::Contacts::View::Base';
 
-use namespace::autoclean;
-
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
-sub build_add_person_html
+sub add
+{
+	my($self, $user_id, $result) = @_;
+
+	$self -> db -> logger -> log(debug => "View::Person.add($user_id, ...)");
+
+	# Force the user_id into the person's record, so it is available elsewhere.
+	# Note: This is the user_id of the person logged on.
+
+	my($person)          = {};
+	$$person{creator_id} = $user_id;
+
+	for my $field_name ($result -> valids)
+	{
+		$$person{$field_name} = $result -> get_value($field_name) || '';
+	}
+
+	# Force an empty preferred name to match the given name(s).
+	# In App::Office::Contacts::Util::Validator,
+	# given_names is mandatory but preferred_name is not.
+
+	if (! $$person{preferred_name})
+	{
+		$$person{preferred_name} = $$person{given_names};
+	}
+
+	# Force the name to match "preferred name<1 space>surname".
+	# There is no 'if' because there is no input field for 'name'.
+
+	$$person{name} = "$$person{preferred_name} $$person{surname}";
+
+	$self -> db -> logger -> log(debug => '-' x 50);
+	$self -> db -> logger -> log(debug => "Adding person $$person{name}...");
+	$self -> db -> logger -> log(debug => "$_ => $$person{$_}") for sort keys %$person;
+	$self -> db -> logger -> log(debug => '-' x 50);
+
+	return $self -> db -> person -> add($person);
+
+} # End of add.
+
+# -----------------------------------------------
+
+sub build_add_html
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_add_person_html');
+	$self -> db -> logger -> log(debug => 'View::Person.build_add_html()');
 
-	my($html) = $self -> load_tmpl('update.person.tmpl');
+	my($html) = $self -> db -> templater -> render
+	(
+		'person.tx',
+		{
+			communication_type_id => mark_raw($self -> build_simple_menu('add_person', 'communication_type', 1) ),
+			context               => 'add',
+			email_field           => mark_raw($self -> build_email_menus('add_person', []) ),
+			facebook_tag          => '',
+			gender_id             => mark_raw($self -> build_simple_menu('add_person', 'gender', 1) ),
+			given_names           => '',
+			homepage              => '',
+			organization_id       => 0,
+			person_id             => 0,
+			person_name           => '',
+			phone_field           => mark_raw($self -> build_phone_menus('add_person', []) ),
+			preferred_name        => '',
+			role_id               => mark_raw($self -> build_simple_menu('add_person', 'role', 1) ),
+			sid                   => $self -> db -> session -> id,
+			surname               => '',
+			title_id              => mark_raw($self -> build_simple_menu('add_person', 'title', 1) ),
+			twitter_tag           => '',
+			ucfirst_context       => 'Add',
+			visibility_id         => mark_raw($self -> build_simple_menu('add_person', 'visibility', 1) ),
+		}
+	);
 
-	$html -> param(action                => 101); # Add.
-	$html -> param(broadcasts            => $self -> build_select('broadcasts') );
-	$html -> param(communication_types   => $self -> build_select('communication_types') );
-	$html -> param(context               => 'add');
-	$html -> param(email_address_types_1 => $self -> build_select('email_address_types', '_1') );
-	$html -> param(email_address_types_2 => $self -> build_select('email_address_types', '_2') );
-	$html -> param(email_address_types_3 => $self -> build_select('email_address_types', '_3') );
-	$html -> param(email_address_types_4 => $self -> build_select('email_address_types', '_4') );
-	$html -> param(genders               => $self -> build_select('genders') );
-	$html -> param(go                    => 'Add');
-	$html -> param(phone_number_types_1  => $self -> build_select('phone_number_types', '_1') );
-	$html -> param(phone_number_types_2  => $self -> build_select('phone_number_types', '_2') );
-	$html -> param(phone_number_types_3  => $self -> build_select('phone_number_types', '_3') );
-	$html -> param(phone_number_types_4  => $self -> build_select('phone_number_types', '_4') );
-	$html -> param(reset_button          => 1);
-	$html -> param(result                => 'New person');
-	$html -> param(roles                 => $self -> build_select('roles') );
-	$html -> param(sid                   => $self -> session -> id);
-	$html -> param(target_id             => 0);
-	$html -> param(titles                => $self -> build_select('titles', '', 3) ); # Ms to match Gender == 1.
+	# Make browser happy by turning the HTML into 1 long line.
 
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$html = $html -> output;
 	$html =~ s/\n//g;
 
 	return $html;
 
-} # End of build_add_person_html.
+} # End of build_add_html.
 
 # -----------------------------------------------
 
-sub build_add_person_js
+sub build_tab_html
 {
-	my($self) = @_;
+	my($self, $person, $occupations, $notes) = @_;
 
-	$self -> log(debug => 'Entered build_add_person_js');
+	$self -> db -> logger -> log(debug => "View::Person.build_tab_html($$person{name}, ...)");
 
-	my($js) = $self -> load_tmpl('update.person.js');
+	my(@tab) =
+	(
+		{
+			body   => mark_raw($self -> build_update_html($person) ),
+			header => 'Update person',
+			name   => 'person_detail_tab',
+		},
+		{
+			body   => mark_raw($self -> view -> occupation -> build_occupation_html($person, $occupations) ),
+			header => 'Occupations',
+			name   => 'person_occupation_tab',
+		},
+		{
+			body   => mark_raw($self -> view -> note -> build_person_html($person, $notes) ),
+			header => 'Notes',
+			name   => 'person_note_tab',
+		},
+	);
 
-	$js -> param(context     => 'add');
-	$js -> param(form_action => $self -> form_action);
+	my($template) = $self -> db -> templater -> render
+	(
+		'tab.tx',
+		{
+			list => [@tab],
+			div  => 'update_person_tab',
+		}
+	);
 
-	return $js -> output;
+	return $template;
 
-} # End of build_add_person_js.
+} # End of build_tab_html.
 
 # -----------------------------------------------
 
-sub build_update_person_html
+sub build_update_html
 {
-	my($self, $target_id, $person) = @_;
+	my($self, $person) = @_;
 
-	$self -> log(debug => 'Entered build_update_person_html');
+	$self -> db -> logger -> log(debug => "View::Person.build_update_html($$person{name})");
 
-	my($template) = $self -> load_tmpl('update.person.tmpl');
-
-	$template -> param(action              => 105); # Update.
-	$template -> param(broadcasts          => $self -> build_select('broadcasts', '', $$person{'broadcast_id'}) );
-	$template -> param(communication_types => $self -> build_select('communication_types', '', $$person{'communication_type_id'}) );
-	$template -> param(context             => 'update');
-	$template -> param(genders             => $self -> build_select('genders', '', $$person{'gender_id'}) );
-	$template -> param(given_names         => $$person{'given_names'});
-	$template -> param(go                  => 'Update');
-	$template -> param(home_page           => $$person{'home_page'});
-	$template -> param(preferred_name      => $$person{'preferred_name'});
-	$template -> param(reset_button        => 0);
-	$template -> param(result              => $$person{'name'});
-	$template -> param(roles               => $self -> build_select('roles', '', $$person{'role_id'}) );
-	$template -> param(surname             => $$person{'surname'});
-	$template -> param(sid                 => $self -> session -> id);
-	$template -> param(target_id           => $target_id);
-	$template -> param(titles              => $self -> build_select('titles', '', $$person{'title_id'}) );
-
-	my($email);
-	my($field);
-	my($i);
-	my($phone);
-	my($type);
-
-	# Hard-code 0 .. 3 email addresses and phone numbers.
-	# If we don't then less than 3 means the type menus don't appear,
-	# in which case we'd need a separate loop just to display them.
-
-	for $i (0 .. 3)
+	for my $key (sort keys %$person)
 	{
-		$email = $i <= $#{$$person{'email_phone'} } ? $$person{'email_phone'}[$i]{'email'} : {};
-		$phone = $i <= $#{$$person{'email_phone'} } ? $$person{'email_phone'}[$i]{'phone'} : {};
-		$field = 'email_' . ($i + 1);
-		$type  = 'email_address_types_' . ($i + 1);
-
-		if ($$email{'address'})
-		{
-			$template -> param($field => $$email{'address'});
-		}
-
-		$template -> param($type => $self -> build_select('email_address_types', '_' . ($i + 1), $$email{'type_id'} || 1) );
-
-		$field = 'phone_' . ($i + 1);
-		$type  = 'phone_number_types_' . ($i + 1);
-
-		if ($$phone{'number'})
-		{
-			$template -> param($field => $$phone{'number'});
-		}
-
-		$template -> param($type => $self -> build_select('phone_number_types', '_' . ($i + 1), $$phone{'type_id'} || 1) );
+		$self -> db -> logger -> log(debug => "$key => $$person{$key}.");
 	}
 
-	my($link);
-	my(@occupation);
-
-	for $field (@{$$person{'occupation'} })
+	my($param) =
 	{
-		if ($$field{'organization_name'} eq '-')
-		{
-			$link = '-';
-		}
-		else
-		{
-			$link = qq|<a href="#tab1" onClick="display_organization($$field{'organization_id'})">$$field{'organization_name'}</a>|;
-		}
+		communication_type_id => mark_raw($self -> build_simple_menu('update_person', 'communication_type', $$person{communication_type_id}) ),
+		context               => 'update',
+		email_field           => mark_raw($self -> build_email_menus('update_person', $$person{email_phone}) ),
+		facebook_tag          => mark_raw($$person{facebook_tag}),
+		gender_id             => mark_raw($self -> build_simple_menu('update_person', 'gender', $$person{gender_id}) ),
+		given_names           => mark_raw($$person{given_names}),
+		homepage              => mark_raw($$person{homepage}),
+		person_id             => $$person{id},
+		person_name           => $$person{name},
+		phone_field           => mark_raw($self -> build_phone_menus('update_person', $$person{email_phone}) ),
+		preferred_name        => mark_raw($$person{preferred_name}),
+		role_id               => mark_raw($self -> build_simple_menu('update_person', 'role', $$person{role_id}) ),
+		sid                   => $self -> db -> session -> id,
+		surname               => mark_raw($$person{surname}),
+		title_id              => mark_raw($self -> build_simple_menu('update_person', 'title', $$person{title_id}) ),
+		twitter_tag           => mark_raw($$person{twitter_tag}),
+		ucfirst_context       => 'Update',
+		visibility_id         => mark_raw($self -> build_simple_menu('update_person', 'visibility', $$person{visibility_id}) ),
+	};
 
-		push @occupation,
-		{
-			occupation_id => $$field{'occupation_id'},
-			name          => $link,
-			title         => $$field{'occupation_title'},
-		};
-	}
+	# Make browser happy by turning the HTML into 1 long line.
 
-	$template -> param(occupation_loop => [@occupation]);
-
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$template = $template -> output;
+	my($template) = $self -> db -> templater -> render
+	(
+		'person.tx',
+		$param
+	);
 	$template =~ s/\n//g;
 
 	return $template;
 
-} # End of build_update_person_html.
-
-# -----------------------------------------------
-
-sub build_update_person_js
-{
-	my($self) = @_;
-
-	$self -> log(debug => 'Entered build_update_person_js');
-
-	my($js)   = $self -> load_tmpl('update.person.js');
-
-	$js -> param(context     => 'update');
-	$js -> param(form_action => $self -> form_action);
-
-	return $js -> output;
-
-} # End of build_update_person_js.
+} # End of build_update_html.
 
 # -----------------------------------------------
 
@@ -183,39 +193,47 @@ sub format_search_result
 {
 	my($self, $name, $people) = @_;
 
-	$self -> log(debug => 'Entered format_search_result');
+	$self -> db -> logger -> log(debug => "View::Person.format_search_result($name, @{[scalar @$people]})");
 
 	my(@row);
 
 	if ($name && ($#$people >= 0) )
 	{
-		my($email);
+		my($previous_surname) = '';
+		my($sid)              = $self -> db -> session -> id;
+
+		my($email, $email_address);
 		my($i);
 		my($person, $phone);
 
 		for $person (@$people)
 		{
-			$name = $$person{'name'};
+			$name = $$person{name};
 
-			for $i (0 .. $#{$$person{'email_phone'} })
+			for $i (0 .. $#{$$person{email_phone} })
 			{
-				$email  = $$person{'email_phone'}[$i]{'email'};
-				$phone  = $$person{'email_phone'}[$i]{'phone'};
+				$email         = $$person{email_phone}[$i]{email};
+				$email_address = $$email{address} ? qq|<a href="mailto:$$email{address}">$$email{address}</a>| : '';
+				$phone         = $$person{email_phone}[$i]{phone};
 
 				push @row,
 				{
-					email      => qq|<a href="mailto:$$email{'address'}">$$email{'address'}</a>|,
-					email_type => $$email{'type_name'},
-					id         => $$person{'id'},
-					name       => $name ? qq|<a href="#tab1" onClick="display_person($$person{'id'})">$name</a>| : '',
-					phone      => $$phone{'number'},
-					phone_type => $$phone{'type_name'},
-					role       => $name ? $self -> db -> util -> get_role_via_id($$person{'role_id'}) : '',
+					email       => $email_address,
+					email_type  => $$email{type_name},
+					given_names => $$person{given_names},
+					id          => $$person{id},
+					name        => $name ? qq|<a href="#" onClick="display_person($$person{id}, '$sid')">$name</a>| : '-',
+					phone       => $$phone{number},
+					phone_type  => $$phone{type_name},
+					role        => $name ? $self -> db -> library -> get_role_via_id($$person{role_id}) : '-',
+					surname     => $previous_surname eq $$person{surname} ? '' : $$person{surname},
+					type        => 'Person', # Not $i == 0 ? 'Person' : '-', which sorts '-' first :-(.
 				};
 
-				# Blanking out the name means it is not repeated in the output (HTML) table.
+				# Blanking out the names means they are not repeated in the output (HTML) table.
 
-				$name = '';
+				$name             = '';
+				$previous_surname = $$person{surname};
 			}
 		}
 	}
@@ -226,116 +244,125 @@ sub format_search_result
 
 # -----------------------------------------------
 
-sub report_add
+sub update
 {
 	my($self, $user_id, $result) = @_;
 
-	$self -> log(debug => 'Entered report_add');
+	$self -> db -> logger -> log(debug => "View::Person.update($user_id, ...)");
 
-	my($template) = $self -> load_tmpl('update.report.tmpl');
+	# Force the user_id into the person's record, so it is available elsewhere.
+	# Note: This is the user_id of the person logged on.
 
-	if ($result -> success)
+	my($person)          = {};
+	$$person{creator_id} = $user_id;
+	$$person{id}         = $result -> get_value('person_id');
+
+	for my $field_name ($result -> valids)
 	{
-		# Force the user_id into the person's record, so it is available elsewhere.
-		# Note: This is the user_id of the person logged on.
-
-		my($person)            = {};
-		$$person{'creator_id'} = $user_id;
-
-		for my $field_name ($result -> valids)
-		{
-			$$person{$field_name} = $result -> get_value($field_name) || '';
-		}
-
-		# Force the Name to match "Given name(s)<1 space>Surname".
-		# There is no 'if' because there is no input field for 'name'.
-
-		$$person{'name'} = "$$person{'given_names'} $$person{'surname'}";
-
-		# Force an empty Preferred name to match the Given name(s).
-
-		if (! $$person{'preferred_name'})
-		{
-			$$person{'preferred_name'} = $$person{'given_names'};
-		}
-
-		$self -> log(debug => '-' x 50);
-		$self -> log(debug => "Adding person $$person{'given_names'} $$person{'surname'}...");
-		$self -> log(debug => "$_ => $$person{$_}") for sort keys %$person;
-		$self -> log(debug => '-' x 50);
-
-		$template -> param(message => $self -> db -> person -> add($person) );
-	}
-	else
-	{
-		$self -> db -> util -> build_error_report($result, $template);
-
-		$template -> param(message => 'Failed to add person');
+		$$person{$field_name} = $result -> get_value($field_name) || '';
 	}
 
-	return $template -> output;
+	# Force the Name to match "Given name(s)<1 space>Surname".
+	# There is no 'if' because there is no input field for 'name'.
 
-} # End of report_add.
+	$$person{name} = "$$person{given_names} $$person{surname}";
+
+	# Force an empty Preferred name to match the Given name(s).
+
+	if (! $$person{preferred_name})
+	{
+		$$person{preferred_name} = $$person{given_names};
+	}
+
+	$self -> db -> logger -> log(debug => '-' x 50);
+	$self -> db -> logger -> log(debug => "Updating person $$person{name}...");
+	$self -> db -> logger -> log(debug => "$_ => $$person{$_}") for sort keys %$person;
+	$self -> db -> logger -> log(debug => '-' x 50);
+
+	$self -> db -> person -> update($person);
+
+} # End of update.
 
 # -----------------------------------------------
-
-sub report_update
-{
-	my($self, $user_id, $id, $result) = @_;
-
-	$self -> log(debug => 'Entered update_person_report');
-
-	my($template) = $self -> load_tmpl('update.report.tmpl');
-
-	if ($result -> success)
-	{
-		# Force the user_id into the person's record, so it is available elsewhere.
-		# Note: This is the user_id of the person logged on.
-
-		my($person)            = {};
-		$$person{'creator_id'} = $user_id;
-
-		for my $field_name ($result -> valids)
-		{
-			$$person{$field_name} = $result -> get_value($field_name) || '';
-		}
-
-		# Force the person's id to be the id from the form.
-
-		$$person{'id'} = $id;
-
-		# Force the Name to match "Given name(s)<1 space>Surname".
-		# There is no 'if' because there is no input field for 'name'.
-
-		$$person{'name'} = "$$person{'given_names'} $$person{'surname'}";
-
-		# Force an empty Preferred name to match the Given name(s).
-
-		if (! $$person{'preferred_name'})
-		{
-			$$person{'preferred_name'} = $$person{'given_names'};
-		}
-
-		$self -> log(debug => '-' x 50);
-		$self -> log(debug => "Updating person $$person{'name'}...");
-		$self -> log(debug => "$_ => $$person{$_}") for sort keys %$person;
-		$self -> log(debug => '-' x 50);
-
-		$template -> param(message => $self -> db -> person -> update($person) );
-	}
-	else
-	{
-		$self -> db -> util -> build_error_report($result, $template);
-
-		$template -> param(message => 'Failed to add person');
-	}
-
-	return $template -> output;
-
-} # End of report_update.
-
-# -----------------------------------------------
-
-__PACKAGE__ -> meta -> make_immutable;
 
 1;
+
+=head1 NAME
+
+App::Office::Contacts::View::Person - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+Each instance of this class extends L<App::Office::Contacts::View::Base>, with these attributes:
+
+=over 4
+
+=item o (None)
+
+=back
+
+=head1 Methods
+
+=head2 add($user_id, $result)
+
+Adds a person.
+
+=head2 build_add_html()
+
+Returns the HTML for the 'Add Person' tab.
+
+=head2 build_tab_html($person, $occupations, $notes)
+
+Returns the HTML for the 3 tabs: 'Update Person', 'Add Occupation' and 'Add Notes'.
+
+=head2 build_update_html($person)
+
+Returns the HTML for the 'Update Person' tab.
+
+=head2 format_search_result($name, $people)
+
+Returns the HTML for the result of searching for people.
+
+=head2 update($user_id, $result)
+
+Updates a person.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut

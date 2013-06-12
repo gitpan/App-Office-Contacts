@@ -1,147 +1,62 @@
 package App::Office::Contacts;
 
-use parent 'CGI::Application';
+use parent 'CGI::Snapp';
 use strict;
+use utf8;
 use warnings;
-
-use CGI::Session;
-
-use Data::UUID;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
 
 use Digest::SHA;
 
-use Log::Dispatch::DBI;
+use Text::Xslate 'mark_raw';
 
-# We don't use Moose because we isa CGI::Application.
+# We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
 sub build_about_html
 {
-	my($self, $user_id) = @_;
+	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_about_html');
+	$self -> log(debug => 'Contacts.build_about_html()');
 
-	my($config)   = $self -> param('config');
-	my($template) = $self -> load_tmpl('table.even.odd.tmpl', loop_context_vars => 1);
-	my($user)     = $user_id ? $self -> param('db') -> person -> get_person($user_id, $user_id) : [{name => 'N/A'}];
-	$user         = $$user[0]{'name'} ? $$user[0]{'name'} : 'No-one is logged on';
+	my($config)  = $self -> param('config');
+#	my($user_id) = $self -> param('user_id');
+#	my($user)    = $user_id ? $self -> param('db') -> person -> get_person_list($user_id, $user_id) : [{name => 'N/A'}];
+#	$user        = $$user[0]{name} ? $$user[0]{name} : 'No-one is logged on';
 
-	my(@tr);
+	my(@row);
 
-	push @tr, {left_td => 'Program', right_td => "$$config{'program_name'} $$config{'program_version'}"};
-	push @tr, {left_td => 'Author',  right_td => $$config{'program_author'} };
-	push @tr, {left_td => 'Help',    right_td => qq|<a href="$$config{'program_faq_url'}">FAQ</a>|};
-	#push @tr, {left_td => 'Current user', right_td => $user_id};
+	push @row,
+	{
+		left => 'Program', right => "$$config{program_name} $$config{program_version}",
+	},
+	{
+		left => 'Author', right => $$config{program_author},
+	},
+	{
+		left => 'More help', right => qq|<a href="$$config{program_faq_url}">FAQ</a>|,
+	};
 
-	$template -> param(tr_loop => \@tr);
-
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$template = $template -> output;
-	$template =~ s/\n//g;
-
-	return $template;
+	return $self -> _format_help(\@row);
 
 } # End of build_about_html.
 
 # -----------------------------------------------
 
-sub build_head_init
+sub build_error_html
 {
-	my($self, $search_html) = @_;
+	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_head_init');
+	$self -> log(debug => 'Contacts.build_error_html()');
 
-	my($about_html)        = $self -> build_about_html;
-	my($organization_html) = $self -> param('view') -> organization -> build_add_organization_html;
-	my($person_html)       = $self -> param('view') -> person -> build_add_person_html;
-	my($report_html)       = $self -> param('view') -> report -> build_report_html;
+	return '<p align="center">No errors have been detected yet</p>';
 
-	# These things are called by YAHOO.util.Event.onDOMReady(init).
-
-	my($head_init) = <<EJS;
-
-// Outer tabs.
-
-search_tab = new YAHOO.widget.Tab
-({
-	label: "Search",
-	content: '$search_html',
-	active: true
-});
-tab_set.addTab(search_tab);
-search_tab.addListener('click', make_search_name_focus);
-
-add_tab = new YAHOO.widget.Tab
-({
-	label: "Add",
-	content: '<div id="add_tab"></div>'
-});
-tab_set.addTab(add_tab);
-
-report_tab = new YAHOO.widget.Tab
-({
-	label: "Report",
-	content: '$report_html'
-});
-tab_set.addTab(report_tab);
-
-about_tab = new YAHOO.widget.Tab
-({
-	label: "About",
-	content: '$about_html'
-});
-tab_set.addTab(about_tab);
-
-// Inner tabs.
-
-add_person_tab = new YAHOO.widget.Tab
-({
-	label: "Add Person",
-	content: '$person_html',
-	active: true
-});
-inner_tab_set.addTab(add_person_tab);
-
-add_organization_tab = new YAHOO.widget.Tab
-({
-	label: "Add Organization",
-	content: '$organization_html'
-});
-inner_tab_set.addTab(add_organization_tab);
-
-// Add outer tab set to document.
-
-tab_set.appendTo("container");
-
-// Add inner tab set to outer tab.
-// WTF: Must do the above /before/ adding inner tabs to outer tab.
-
-inner_tab_set.appendTo("add_tab");
-
-make_search_name_focus();
-
-// Sigh: The calendars default to not having a current date.
-
-var calendar_element = YAHOO.util.Dom.get("from_calendar_div");
-
-if (calendar_element !== null)
-{
-	var today = new Date();
-	today = today.toLocaleDateString();
-	from_calendar = new YAHOO.widget.Calendar("from_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
-	from_calendar.render();
-	to_calendar = new YAHOO.widget.Calendar("to_calendar_div", {navigator: {}, selected: today, start_weekday: 1});
-	to_calendar.render();
-}
-
-EJS
-	return $head_init;
-
-} # End of build_head_init.
+} # End of build_error_html.
 
 # -----------------------------------------------
 
@@ -149,22 +64,79 @@ sub build_web_page
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_web_page');
+	$self -> log(debug => 'Contacts.build_web_page()');
 
 	# Generate the web page itself. This is not loaded by sub cgiapp_init(),
-	# because, with AJAX, we only need it the first time the script is run.
+	# because, with Ajax, we only need it the first time the script is run.
 
-	my($page)       = $self -> load_tmpl('web.page.tmpl');
-	my(@search_tab) = $self -> param('view') -> search -> build_search_tab;
+	my($config) = $self -> param('config');
+	my($param)  =
+	{
+		datatable_js_url      => $$config{datatable_js_url},
+		demo_page_css_url     => $$config{demo_page_css_url},
+		demo_table_css_url    => $$config{demo_table_css_url},
+		fancy_table_css_url   => $$config{fancy_table_css_url},
+		html4about            => mark_raw($self -> build_about_html),
+		html4add_organization => mark_raw($self -> param('view') -> organization -> build_add_html),
+		html4add_person       => mark_raw($self -> param('view') -> person -> build_add_html),
+		html4error            => mark_raw($self -> build_error_html),
+		html4report           => mark_raw($self -> param('view') -> report -> build_report_html),
+		html4search           => mark_raw($self -> param('view') -> search -> build_search_html),
+		jquery_js_url         => $$config{jquery_js_url},
+		jquery_ui_css_url     => $$config{jquery_ui_css_url},
+		jquery_ui_js_url      => $$config{jquery_ui_js_url},
+		web_page_css_url      => $$config{web_page_css_url},
+	};
 
-	$page -> param(css_url   => ${$self -> param('config')}{'css_url'});
-	$page -> param(head_init => $self -> build_head_init($search_tab[1]) );
-	$page -> param(head_js   => $self -> build_head_js($search_tab[0]) );
-	$page -> param(yui_url   => ${$self -> param('config')}{'yui_url'});
-
-	return $page -> output;
+	return $self -> param('db') -> templater -> render('web.page.tx', $param);
 
 } # End of build_web_page.
+
+# -----------------------------------------------
+
+sub _format_help
+{
+	my($self, $list) = @_;
+
+	$self -> log(debug => 'Contacts._format_help()');
+
+	my($html) = <<EOS;
+<table class="display" id="help_div" cellpadding="0" cellspacing="0" border="0">
+<thead>
+<tr>
+	<th align="left">Item</th>
+	<th align="left">Explanation</th>
+</tr>
+</thead>
+<tbody>
+EOS
+	my($count) = 0;
+
+	my($class);
+	my($left);
+	my($right);
+
+	for my $row (@$list)
+	{
+		$class = (++$count % 2 == 1) ? 'odd gradeC' : 'even gradeC';
+		$left  = mark_raw($$row{left});
+		$right = mark_raw($$row{right});
+		$html  .= <<EOS;
+<tr class="$class">
+	<td>$left</td>
+	<td>$right</td>
+</tr>
+EOS
+	}
+
+	$html .= <<EOS;
+</tbody>
+</table>
+EOS
+
+	return $html;
+
+} # End of _format_help.
 
 # -----------------------------------------------
 
@@ -172,78 +144,43 @@ sub global_prerun
 {
 	my($self) = @_;
 
-	# Outputs nothing, since logger not yet set up.
-	#$self -> log(debug => 'Entered global_prerun');
-
-	# Set up the 2nd part of the logger. The 1st part was set up in
-	# App::Office::Contacts::Controller.cgiapp_prerun().
-
-	$self -> param('logger') -> add
-	(
-		Log::Dispatch::DBI -> new
-		(
-			dbh       => $self -> param('db') -> dbh,
-			min_level => ${$self -> param('config')}{'min_log_level'},
-			name      => __PACKAGE__,
-		)
-	);
+	$self -> log(debug => 'Contacts.global_prerun()');
 
 	# Set up a few more things.
 
-	$self -> param('db') -> util -> set_table_map;
+	$self -> param(system_error => '<response><error>Error: Software error</error><html>Contact your system administrator</html></response>');
 	$self -> param(user_id => 0);      # 0 means we don't have anyone logged on.
 	$self -> run_modes([qw/display/]); # Other controllers add their own run modes.
-	$self -> tmpl_path(${$self -> param('config')}{'tmpl_path'});
 
 	# Log the CGI form parameters.
 
 	my($q) = $self -> query;
 
-	$self -> log(info => '');
 	$self -> log(info => $q -> url(-full => 1, -path => 1) );
 	$self -> log(debug => 'Request method: ' . $q -> request_method);
-	$self -> log(debug => "Param: $_: " . $q -> param($_) ) for $q -> param;
 
-	# Set up the session.
-
-	$self -> param(session =>
-	CGI::Session -> new
-	(
-		${$self -> param('config')}{'session_driver'},
-		$q,
-		{
-			Handle    => $self -> param('db') -> dbh,
-			TableName => ${$self -> param('config')}{'session_table_name'},
-		},
-		{
-			name => 'sid',
-		}
-	) );
-
-	$self -> log(info => 'Session id: ' . $self -> param('session') -> id);
- 	$self -> log(debug => 'tmpl_path: ' . $self -> tmpl_path);
-
-}	# End of global_prerun.
-
-# -----------------------------------------------
-# This sub is copied from App::Office::Contacts::Base.
-# This version is for CGI::Application-based modules.
-# Moose-based modules have their own version.
-
-sub log
-{
-	my($self, $level, $s) = @_;
-	$level ||= 'info';
-
-	if ($s)
+	for ($q -> param)
 	{
-		$s = (caller)[0] . ". $s";
-		$s =~ s/^App::Office::Contacts/\*/;
+		# Skip potentially big notes.
+
+		if ($_ eq 'body')
+		{
+			my($note) = $q -> param($_);
+			$note     = length($note) > 20 ? (substr($note, 0, 20) . '...') : $note;
+
+			$self -> log(debug => "Param: $_: $note");
+		}
+		else
+		{
+			$self -> log(debug => "Param: $_: " . $q -> param($_) );
+		}
 	}
 
-	$self -> param('logger') -> $level($s || '');
+	# Set up the session. This tells us we got this far.
 
-} # End of log.
+	$self -> log(info => 'Session id: ' . $self -> param('db') -> session -> id);
+
+}	# End of global_prerun.
 
 # -----------------------------------------------
 
@@ -251,7 +188,10 @@ sub teardown
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered teardown');
+	$self -> log(debug => 'Contacts.teardown()');
+	$self -> param('db') -> session -> flush;
+	$self -> logger -> log_object -> disconnect; # The logger's log_object has its own dbh.
+	$self -> logger -> simple -> disconnect;     # The logger's 'simple' object has a dbh.
 
 } # End of teardown.
 
@@ -261,11 +201,9 @@ sub teardown
 
 =head1 NAME
 
-C<App::Office::Contacts> - A web-based contacts manager
+App::Office::Contacts - A web-based contacts manager
 
 =head1 Synopsis
-
-The scripts discussed here, I<contacts.cgi> and I<contacts.psgi>, are shipped with this module.
 
 A classic CGI script, I<contacts.cgi>:
 
@@ -275,13 +213,13 @@ A classic CGI script, I<contacts.cgi>:
 	use warnings;
 
 	use CGI;
-	use CGI::Application::Dispatch;
+	use CGI::Snapp::Dispatch;
 
 	# ---------------------
 
 	my($cgi) = CGI -> new;
 
-	CGI::Application::Dispatch -> dispatch
+	CGI::Snapp::Dispatch -> new -> dispatch
 	(
 		args_to_new => {QUERY => $cgi},
 		prefix      => 'App::Office::Contacts::Controller',
@@ -296,17 +234,22 @@ A classic CGI script, I<contacts.cgi>:
 A L<Plack> script, I<contacts.psgi>:
 
 	#!/usr/bin/env perl
+	#
+	# Run with:
+	# starman -l 127.0.0.1:5003 --workers 1 httpd/cgi-bin/office/contacts.psgi &
+	# or, for more debug output:
+	# plackup -l 127.0.0.1:5003 httpd/cgi-bin/office/contacts.psgi &
 
 	use strict;
 	use warnings;
 
-	use CGI::Application::Dispatch::PSGI;
+	use CGI::Snapp::Dispatch;
 
 	use Plack::Builder;
 
 	# ---------------------
 
-	my($app) = CGI::Application::Dispatch -> as_psgi
+	my($app) = CGI::Snapp::Dispatch -> new -> as_psgi
 	(
 		prefix => 'App::Office::Contacts::Controller',
 		table  =>
@@ -318,71 +261,136 @@ A L<Plack> script, I<contacts.psgi>:
 	);
 
 	builder
-{
-		enable "Plack::Middleware::Static",
-		path => qr!^/(assets|favicon|yui)/!,
-		root => '/var/www';
+	{
+		enable "ContentLength";
+		enable 'Static',
+		path => qr!^/(assets|favicon)!,
+		root => '/dev/shm/html';
 		$app;
 	};
+
+The scripts discussed here, I<contacts.cgi> and I<contacts.psgi>, are shipped with this module,
+in the httpd/ directory.
 
 For more on Plack, see L<My intro to Plack|http://savage.net.au/Perl/html/plack.for.beginners.html>.
 
 =head1 Description
 
-C<App::Office::Contacts> implements a web-based, private and group, contacts manager.
+C<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
 
-C<App::Office::Contacts> uses C<Moose>.
+Here 'private' means you can specify which contacts are not to appear in the search results of other
+people using the same database. You do this by setting their visibility to 'Just me'.
 
-Once such a structure is in place, then we can have multiple sites per organization,
-or multiple occupations per person, or multiple donations per entity (person or
-organization).
+C<App::Office::Contacts> uses the light-weight module L<Moo>.
 
-For the latter, see C<App::Office::Contacts::Donations>.
+Major features:
+
+=over 4
+
+=item o utf8-aware
+
+=item o Any number of people
+
+=item o Any number of organizations
+
+=item o People can have any number of occupations
+
+=item o Organizations can have any number of staff
+
+=item o People and organizations can have any number of notes
+
+These are displayed with the most recent notes first.
+
+=item o Supports using any database server having a Perl interface
+
+This is controlled via a config file.
+
+=item o 1 to 4 email addresses per person or organization
+
+4 was chosen just to limit the amount of screen real estate occupied. It can be easily changed.
+
+=item o 1 to 4 phone numbers per person or organization
+
+=item o Installers can provide their own FAQ page
+
+=item o On-screen information hidden in tabs is updated if appropriate
+
+For example, if you add a person to the staff list for an organization, and the details for that person
+are on another, hidden, tab (the organization tab must have the focus), then the list of occupations for
+that peson is updated as soon as they are added.
+
+=item o jQuery-style autocomplete is used for various fields
+
+The list of fields which support autocomplete are listed both on the appropriate forms and on the default
+FAQ page.
+
+=item o An add-on package supports donations per person and per organization
+
+But L<App::Office::Contacts::Donations> has not yet been updated to match V 2.00 of C<App::Office::Contacts>.
+
+=item o An add-on package supports importing vCards, as probably output by your email client
+
+But L<App::Office::Contacts::Import::vCards> has not yet been updated to match V 2.00 of C<App::Office::Contacts>.
+
+=back
+
+Screen shots:
+
+L<The database schema|http://savage.net.au/Module-reviews/images/Contacts/contacts.schema.png>.
+
+L<Sample search results|http://savage.net.au/Module-reviews/images/Contacts/search.results.png>.
+
+L<Sample personal details|http://savage.net.au/Module-reviews/images/Contacts/personal.details.png>.
+The organizational details form is very similar.
 
 =head1 Distributions
 
 This module is available as a Unix-style distro (*.tgz).
 
-See http://savage.net.au/Perl-modules/html/installing-a-module.html for
+See L<http://savage.net.au/Perl-modules/html/installing-a-module.html> for
 help on unpacking and installing distros.
 
-=head1 Installation Pre-requisites
+=head1 Installation
 
-=head2 A note to beginners
+=head2 Installation Pre-requisites
 
-At various places I refer to a file, lib/App/Office/Contacts/.htoffice.contacts.conf,
-shipped in this distro.
+=head3 A note to beginners
+
+At various places I refer to a file, C<share/.htoffice.contacts.conf>,
+shipped with this distro.
 
 Please realize that if you edit this file, you must ensure the copy you are editing
 is the one used by the code at run-time.
 
 After a module such as this is installed, the code will look for that file
-in the directory where I<Build.PL> or I<Makefile.PL> has installed the code.
+in the directory where Makefile.PL has installed the code.
 
-The module which reads the file is C<App::Office::Contacts::Util::Config>.
+The module which reads the file is L<App::Office::Contacts::Util::Config>.
 
-Both I<Build.PL> or I<Makefile.PL> install .htoffice.contacts.conf along with the Perl modules.
+Makefile.PL installs C<.htoffice.contacts.conf> into a shared directory.
 
-So, if you unpack the distro and edit the file within the unpacked code, you'll still need
-to copy the patched version into the installed code's directory structure.
+So, if you unpack the distro and edit the file within the unpacked code, you will still need
+to copy the patched version by running:
+
+	perl scripts/copy.config.pl
 
 There is no need to restart your web server after updating this file.
 
-=head2 The Yahoo User Interface (YUI)
+=head3 jQuery, jQuery UI and DataTables
 
-This module does not ship with YUI. You can get it from:
+This module does not ship with any of these Javascript libraries. You can get them from:
 
-	http://developer.yahoo.com/yui
+	http://jquery.com/
+	http://jqueryui.com/
+	http://datatables.net/
 
-Most development was done using V 2.8.0r4. The original work was done with an earlier version
-of YUI.
+Most development was done using jQuery V 1.8.1, which ships with jQuery V 1.9.2. Lastly, DataTables
+V 1.9.4 was used too.
 
-Currently, I have no plans to port this code to V 3 of YUI.
+See C<share/.htoffice.contacts.conf>, around lines 23 .. 25 and 61 .. 63, where it
+specifies the URLs used by the code to access these libs.
 
-See lib/App/Office/Contacts/.htoffice.contacts.conf, around line 70, where it specifies the
-URL used by the code to access the YUI.
-
-=head2 The database server
+=head3 The database server
 
 I use Postgres.
 
@@ -399,12 +407,12 @@ Then, to view the database after using the shipped Perl scripts to create and po
 	(password...)
 	psql>...
 
-If you use another server, patch lib/App/Office/Contacts/.htoffice.contacts.conf,
+If you use another server, patch C<share/.htoffice.contacts.conf>,
 around lines 22 and 36, where it specifies the database DSN and the CGI::Session driver.
 
-=head1 Installing the module
+=head2 Installing the module
 
-=head2 The Module Itself
+=head3 The Module Itself
 
 Install C<App::Office::Contacts> as you would for any C<Perl> module:
 
@@ -418,13 +426,6 @@ or run
 
 or unpack the distro, and then either:
 
-	perl Build.PL
-	./Build
-	./Build test
-	sudo ./Build install
-
-or:
-
 	perl Makefile.PL
 	make (or dmake)
 	make test
@@ -432,69 +433,53 @@ or:
 
 Either way, you need to install all the other files which are shipped in the distro.
 
-=head2 The Configuration File
+=head3 Install the L<Text::Xslate> files
 
-Next, tell L<App::Office::Contacts> your values for some options.
+Copy the C<htdocs/assets/> directory, and all its subdirectories, from the distro to the doc root directory
+of your web server.
 
-For that, see config/.htoffice.contacts.conf.
+Specifically, my doc root is C</dev/shm/html/>, so I end up with C</dev/shm/html/assets/>.
 
-If you are using Build.PL, running Build (without parameters) will run scripts/copy.config.pl,
-as explained next.
+=head3 The Configuration File
 
-If you are using Makefile.PL, running make (without parameters) will also run scripts/copy.config.pl.
+Next, tell L<App::Office::Contacts> your values for some options. This includes the path to the files used
+by L<Text::Xslate>.
 
-Either way, before editing the config file, ensure you run scripts/copy.config.pl. It will copy
-the config file using L<File::HomeDir>, to a directory where the run-time code in
+For that, see C<share/.htoffice.contacts.conf> as discussed above.
+
+Before editing the config file, ensure you run C<scripts/copy.config.pl>. It will copy
+the config file using L<File::ShareDir>, to a directory where the run-time code in
 L<App::Office::Contacts> will look for it.
 
 	shell>cd App-Office-Contacts-1.00
 	shell>perl scripts/copy.config.pl
+	shell>perl scripts/find.config.pl
 
-Under Debian, this directory will be $HOME/.perl/App-Office-Contacts/. When you
-run copy.config.pl, it will report where it has copied the config file to.
+Then, edit the installed copy rather than the copy shipped with the distro.
 
-Check the docs for L<File::HomeDir> to see what your operating system returns for a
-call to my_dist_config().
+=head3 Install the FAQ web page
 
-The point of this is that after the module is installed, the config file will be
-easily accessible and editable without needing permission to write to the directory
-structure in which modules are stored.
+In C<share/.htoffice.contacts.conf> there is a line:
 
-That's why L<File::HomeDir> and L<Path::Class> are pre-requisites for this module.
-
-All modules which ship with their own config file are advised to use the same mechanism
-for storing such files.
-
-=head2 Install the C<HTML::Template> files
-
-Copy the distro's htdocs/assets/ directory to your web server's doc root.
-
-Specifically, my doc root is /var/www/, so I end up with /var/www/assets/.
-
-=head2 Install the FAQ web page
-
-In lib/App/Office/Contacts/.htoffice.contacts.conf there is a line:
-
-	program_faq_url=/contacts.faq.html
+	program_faq_url = /assets/templates/app/office/contacts/faq.html
 
 This page is displayed when the user clicks FAQ on the About tab.
 
-A sample page is shipped in docs/html/contacts.faq.html. It has been built from
-docs/pod/contacts.faq.pod.
+A sample page is shipped in C<htdocs/assets/templates/app/office/contacts/faq.html>.
 
-So, copy the latter into your web server's doc root, or generate another version
-of the page, using docs/pod/contacts.faq.pod as input.
+So, copying the C<htdocs/assets/> directory, as above, will have installed this file.
+Alternately, replace it with your own.
 
-=head2 Install the trivial CGI script and the Plack script
+=head3 Install the trivial CGI script and the Plack script
 
-Copy the distro's httpd/cgi-bin/office/ directory to your web server's cgi-bin/ directory,
+Copy the C<httpd/cgi-bin/office/> directory to the C<cgi-bin/> directory of your web server,
 and make I<contacts.cgi> executable.
 
-My cgi-bin/ dir is /usr/lib/cgi-bin/, so I end up with /usr/lib/cgi-bin/office/contacts.cgi.
+My C<cgi-bin/> dir is C</usr/lib/cgi-bin/>, so I end up with C</usr/lib/cgi-bin/office/contacts.cgi>.
 
-Now I can run http://127.0.0.1/cgi-bin/office/contacts.cgi (but not yet!).
+Now I can run C<http://127.0.0.1/cgi-bin/office/contacts.cgi> (but not yet!).
 
-=head2 Creating and populating the database
+=head3 Creating and populating the database
 
 The distro contains a set of text files which are used to populate constant tables.
 All such data is in the data/ directory.
@@ -511,137 +496,87 @@ After unpacking the distro, create and populate the database:
 	shell>perl -Ilib scripts/create.tables.pl -v
 	shell>perl -Ilib scripts/populate.tables.pl -v
 	shell>perl -Ilib scripts/populate.fake.data.pl -v
-	shell>perl -Ilib scripts/report.tables.pl -v
 
-Note: The '-Ilib' means 2 things:
+Notes:
 
 =over 4
 
-=item Perl looks in the current directory structure for the modules
+=item If using -Ilib, Perl looks in the current directory structure for the modules
 
 That is, Perl does not use the installed version of the code, if any.
 
-=item The code looks in the current directory structure for .htoffice.contacts.conf
+=item The code looks in the shared directory structure for C<.htoffice.contacts.conf>
 
-That is, it does not use the installed version of this file, if any.
+If you unpack the distro, and run:
+
+	perl scripts/copy.config.pl
+
+it will copy the config file to the install dir, and report where it is.
 
 =back
 
 So, if you leave out the '-Ilib', Perl will use the version of the code which has been
-formally installed, and then the code will look in the same place for .htoffice.contacts.conf.
+formally installed.
 
-=head2 Start testing
+=head3 Start testing
 
-Point your broswer at http://127.0.0.1/cgi-bin/contacts.cgi.
+Point your broswer at C<http://127.0.0.1/cgi-bin/contacts.cgi>.
 
 Your first search can then be just 'a', without the quotes.
 
-=head1 Files not shipped with this distro
+=head1 Object attributes
 
 =over 4
 
-=item C<App::Office::Contacts::Donations>
-
-This code has been written, and runs in a private module, C<Local::Contacts>.
-
-C<Local::Contacts> actually contains all of App::Office::Contacts, including donations,
-importing vCards, occupations, sites and a start to sticky label printing.
-
-C<Local::Contacts> has been re-written to split it into several modules,
-which are being released one at a time, and to remove the Apache-specific code,
-and to start using REST [1] as a way of structuring path infos.
-
-[1] http://en.wikipedia.org/wiki/Representational_State_Transfer
-
-C<App::Office::Contacts::Donations> will be released shortly.
-
-=item C<App::Office::Contacts::Export::StickyLabels>
-
-Much of this code has already been written, but is not yet grafted in from C<Local::Contacts>.
-
-See scripts/mail.labels.pl (not yet shipped) for details. This program creates
-data/label_brands.txt and data/label_codes.txt.
-
-These text files are then imported when running scripts/populate.tables.pl.
-
-C<App::Office::Contacts::Export::StickyLabels> will be released shortly.
-
-=item C<App::Office::Contacts::Import::vCards>
-
-This code has also been written, but is not yet grafted in from C<Local::Contacts>.
-
-C<App::Office::Contacts::Import::vCards> will be released shortly.
-
-=item C<App::Office::Contacts::Sites>
-
-This code has also been written, but is not yet grafted in from C<Local::Contacts>.
-
-The country/state/locality/postcode (zipcode) data will be shipped in SQLite format,
-as part of C<App::Office::Contacts::Sites>.
-
-Data for Australia and America with be included in the distro.
-
-Note: The country/etc data is imported into whatever database you choose to use for
-your contacts database, even if that's another SQLite database.
-
-C<App::Office::Contacts::Sites> will be released shortly.
+=item o See the parent module L<CGI::Snapp>
 
 =back
 
-Lastly, the occupations per person code is not being shipped yet.
+=head1 Methods
+
+=head2 build_about_html($user_id)
+
+Creates a HTML table for the About tab.
+
+Note: The code does not currently use $user_id. It is present as provision if the code is patched to
+identify logged-on users. See the L</FAQ> for a discussion of this issue.
+
+=head2 build_web_page()
+
+Creates the basic web page in response to the very first request from the user.
+
+=head2 global_prerun()
+
+Contains code shared by this module and L<App::Office::Contacts::Donations>.
+
+=head2 teardown()
+
+Shuts down database connexions, etc, as the program is exiting.
 
 =head1 FAQ
 
-=over 4
+=head2 How do I delete an organization or person?
 
-=item I found a bug! Some subs are called twice! See the log!
+Search for them, and then set their visibility to No-one. Hence they stay in the database but are no
+longer visible.
 
-Nope, wrong again. These subs are meant to be called twice.
+=head2 Is utf8 supported in V 2.00?
 
-	ron@zoe:~/perl.modules/App-Office-Contacts$ ack build_notes_js
-	lib/App/Office/Contacts/Controller/Initialize.pm
-	104: my($organization_notes_js)  = $self -> param('view') -> notes -> build_notes_js('organization');
-	105: my($person_notes_js)        = $self -> param('view') -> notes -> build_notes_js('person');
+Yes. L<Text::CSV::Encoded> is used in C<App::Office::Contacts::Util::Import> to read data/fake.people.txt.
 
-This applies to build_donations_js and build_notes_js, at lease.
+See L</Creating and populating the database> for a discussion of scripts/populate.fake.people.pl.
 
-=item The Report Type menu contains the wrong entries
+Do a search for Brocard, the author of the original L<GraphViz>, and you will find LE<233>on Brocard.
 
-Perhaps you have not dropped and created the tables properly.
+=head2 Why not allow multiple Facebook and Twitter tags per org or person?
 
-You should edit these files (all in the C<App::Office::Contacts::Donations> scripts/
-directory), to suit yourself, and then run them in this order:
+This is under consideration.
 
-=over 4
+=head2 How can I update the spouses table?
 
-=item drop.all
+You cannot. I have not yet decided how to provide an on-screen mechanism to update this table.
 
-=item create.all
-
-=item populate.all
-
-=item populate.fake.data
-
-This last one is for testing only, of course.
-
-=back
-
-The thing to note is that scripts/populate.all, when processing the reports table,
-only adds records which are not there already. It can do this because data/reports.txt
-for C<App::Office::Contacts> contains 1 record ('Records'), but data/reports.txt for
-C<App::Office::Contacts::Donations> only contains records pertaining to donations.
-
-This still means that the entries in the reports table must be names exactly as expected
-by the if statement in report.js, function report_onsubmit(). You have been warned.
-
-The corresponding Perl code is in C<App::Office::Contacts::View::Report> and
-C<App::Office::Contacts::Donations::View::Report>.
-
-=item Yes, but Contacts can now see the Donations report types
-
-Ahh, yes. That is a design fault.
-
-=item How is the code structured?
+=head2 How is the code structured?
 
 MVC (Model-View-Controller).
 
@@ -649,13 +584,13 @@ The sample scripts I<contacts.cgi> and I<contacts> use
 
 	prefix => 'App::Office::Contacts::Controller'
 
-so the files in lib/App/Office/Contacts/Controller are the modules which are run to respond
-to http requests.
+so the files in C<lib/App/Office/Contacts/Controller> and C<lib/App/Office/Contacts/Controller/Exporter> are the
+modules which are run to respond to http requests.
 
-Files in lib/App/Office/Contacts/View implement views, and those in lib/App/Office/Contacts/Database
+Files in C<lib/App/Office/Contacts/View> implement views, and those in C<lib/App/Office/Contacts/Database>
 implement the model.
 
-Files in lib/App/Office/Contacts/Util are a mixture:
+Files in C<lib/App/Office/Contacts/Util> are a mixture:
 
 =over 4
 
@@ -667,7 +602,7 @@ This is used by all code.
 
 This is just used to create tables, populate them, and drop them.
 
-Hence it won't be used by C<CGI> scripts, unless you write such a script yourself.
+Hence it will not be used by C<CGI> scripts, unless you write such a script yourself.
 
 =item Validator.pm
 
@@ -675,70 +610,75 @@ This is used to validate CGI form data.
 
 =back
 
-=item Why did you use Sub::Exporter?
+=head2 Why did you use Sub::Exporter?
 
 The way I wrote the code, various pairs of classes, e.g.
-C<App::Office::Contacts::Controller::Notes> and
-C<App::Office::Contacts::Donations::Controller::Notes>, could share a lot of code,
+L<App::Office::Contacts::Controller::Note> and
+L<App::Office::Contacts::Donations::Controller::Note>, could share a lot of code,
 but they had incompatible parents. Sub::Exporter solved this problem.
 
-It may happen that one day the code is restructured to solve this differently.
+It may happen that one day the code is restructured to solve this issue differently.
 
-=item It seems you use singular words for the names of arrays and array refs.
+=head2 In the source, it seems you use singular words for the names of arrays and array refs.
 
 Yes I do. I think in terms of the nature of each element, not the storage mechanism.
 
 I have switched to plurals for the names of database tables though.
 
-=item What's the database schema?
+=head2 What is the database schema?
 
-See docs/contacts.schema.png.
+L<The database schema|http://savage.net.au/Module-reviews/images/Contacts/contacts.schema.png>.
 
 The file was created with dbigraph.pl.
 
 dbigraph.pl ships with C<GraphViz::DBI>. I patched it to use C<GraphViz::DBI::General>.
 
-=item Does the database server have pre-requisites?
+The command is:
+
+	dbigraph.pl --dsn 'dbi:Pg:dbname=contacts' --user contact --pass contact > docs/contacts.schema.png
+
+The username and password are as shipped in C<share/.htapp.office.contacts.conf>.
+
+=head2 Why do the email_addresses and phone_numbers tables have upper-case fields?
+
+Because the search feature always uses upper-case. And, e.g., phones can have eXtension information built-in,
+as in '123456x78'. So the 'x' in a search request needs to be upper-cased. And yes, I have worked on a
+personnel + phone number system (at Monash University) which stores (Malaysian) phone numbers like that.
+
+The case for email addresses is rather more obvious.
+
+=head2 Does the database server have pre-requisites?
 
 The code is DBI-based, of course.
 
 Also, the code assumes the database server supports $dbh -> last_insert_id(undef, undef, $table_name, undef).
 
-=item How do I add tables to the schema?
+=head2 What engine type do you use when I use MySQL?
+
+Engine type defaults to innodb when you use MySQL in the dsn.
+
+See C<share/.htapp.office.contacts.conf> for the dsn and the source code of L<App::Office::Contacts::Util::Create>
+for the create statements.
+
+=head2 How do I add tables to the schema?
 
 Do all of these things:
 
 =over 4
 
-=item Choose a new name which does not conflict with names used by Ron's add-on packages!
+=item o Choose a new name which does not conflict with names used by my add-on packages!
 
-=item Add the table's name to data/table_names.txt
+=item o Add the table initialization code to C<App::Office::Contacts::Util::Create>
 
-The table names in this file are stored in the table called I<table_names>,
-in the order read in from this file.
-
-Do not change the order of records in this file if you are going to update the
-I<table_names> table without recreating the database.
-
-The code has to know which table has which id in that table (I<table_names>), so that
-donations, notes and sites can be associated with the correct table, and with the correct
-id within that table.
-
-=item Add the table's initialization code to C<App::Office::Contacts::Util::Create>
-
-You'll need code to create, drop and (perhaps) populate your new table.
+You will need code to create, drop and (perhaps) populate your new table.
 
 There are many examples already in that module.
 
-=item Add the table's name to the table called table_names
-
-Do this with a one-off SQL statement, or by following the instructions above about creating and populating the database.
-
-=item Add your code to utilize the new table
+=item o Add your code to utilize the new table
 
 =back
 
-=item Please explain the program, text file, and database table names
+=head2 Please explain the program, text file, and database table names
 
 Programs are shipped in scripts/, and data files in data/.
 
@@ -746,48 +686,29 @@ I prefer to use '.' to separate words in the names of programs.
 
 However, for database table names, I use '_' in case '.' would case problems.
 
-Programs such as mail.labels.pl and populate.tables.pl, use table names for their data files'
+Programs such as mail.labels.pl and populate.tables.pl, use table names for their data file
 names. Hence the '_' in the names of their data files.
 
-=item What do I need to know about the Close tab/Delete/Notes/Sites/Update buttons?
-
-These buttons are at the bottom of the detail forms for entities (i.e. People and Organizations).
-
-They are deliberately in (English) alphabetical order, left-to-right.
-
-So, if the Donations add-on is installed, the Donations button will be between the Delete and
-Notes buttons.
-
-=item Where do I get data for Localities and Postcodes?
+=head2 Where do I get data for Localities and Postcodes?
 
 In Australia, a list of localities and postcodes is available from
-http://www1.auspost.com.au/postcodes/.
+L<http://www1.auspost.com.au/postcodes/>.
 
-In America, you can buy a list from companies such as http://www.zipcodeworld.com/index.htm,
-who are an official re-seller of US Mail's database.
+In America, you can buy a list from companies such as L<http://www.zipcodeworld.com/index.htm>,
+who are an official re-seller of US Mail database.
 
-=item Is printing supported?
+The licence says the list cannot be passed on in its original format, but encoding it with
+L<DBD::SQLite> solves that problem :-).
 
-Subsets of the entities can be selected for printing to sticky labels.
+=head2 Is printing supported?
 
-A huge range of labels is supported via PostScript::MailLabels.
+Not specifically, although a huge range of labels is supported via L<PostScript::MailLabels>.
 
-Printing will be shipped as C<App::Office::Contacts::Export::StickyLabels>.
+Printing might one day be shipped as C<App::Office::Contacts::Export::StickyLabels>.
 
-=item Will you re-write it to use a different Javascript library?
+=head2 What is it with user_id and creator_id?
 
-No, that would be an unproductive use of my time.
-
-Other such libraries might do a good job, but I don't believe they'll do a better job.
-
-I have published a review of various Javascript libraries [1],
-and IMHO YUI is the best.
-
-[1] http://use.perl.org/~Ron+Savage/journal/37726
-
-=item What's with user_id and creator_id?
-
-Ahhh, you've been reading the source code, eh? Well done!
+Ahhh, you have been reading the source code, eh? Well done!
 
 Originally (i.e. in my home-use module Local::Contacts), users had to log on to use this code.
 
@@ -796,7 +717,7 @@ So, there was a known user at all times, and the modules used user_id to identif
 Then, when records in (some) tables were created, the value of user_id was stored in the creator_id field.
 
 Now I take the view that you should implement Single Sign-on, meaning this set of modules is never
-responsible to tracking who's logged on.
+responsible to tracking who is logged on.
 
 Hence this line in C<App::Office::Contacts::Controller>:
 
@@ -816,50 +737,153 @@ This allows a user_id of 0 to be stored in those tables.
 
 Also, the transaction logging code (since deleted) could identify the user who made each edit.
 
-=item What's special about Person id == 1?
+=head2 What is special about Person id == 1?
 
-Originally, I stored my own name in the people table, with an id of 1. Well, this was good
-for testing, if nothing else.
+Nothing. Very early versions of the code reserved this id, but that is not done now.
 
-And there was code in C<App::Office::Contacts::Database::Person>, sub get_people(),
-to ensure searches would return my name, when it matched the search key.
+=head2 What about Occupation title id == 1?
 
-In other places, updates and deletes of the person with id == 1 were forbidden.
+In a similar manner (to Person id == 1), there is a special occupation title with id == 1, whose name is '-'.
 
-Also, code in C<App::Office::Contacts::Database::Organization>, sub get_organizations(),
-ensured that when I was logged on, my searches would return all organizations which
-matched the search key.
+This allow you to indicate someone works for a given organization without knowing exactly what their job is.
 
-The effect was to override the code which implemented private address books.
-And this was for the purpose of providing support for users of the code.
+You can search for all such special code with 'ack Special'. ack is part of L<App::Ack>.
 
-Such code has been commented out. I did not delete it in case it needs to be
-re-activated in certain circumstances.
+Do I<not> delete this occupation! It is needed. The delete/update occupation code checks to ensure you
+do not delete it with this module, but of course there is always the possibility that you delete it using
+some other tool.
 
-I suggest, now, that the Help tab should point to a web page giving details of
-whatever support you offer.
+=head2 What about Organization id == 1?
 
-=item What about Organization id == 1?
+In a similar manner (to Occupation id == 1), there is a special organization with id == 1, whose name is '-'.
 
-In a similar manner (to Person id == 1), there is a special organization with id == 1, whose name is '-'.
+You can search for all such special code with 'ack Special'. ack is part of L<App::Ack>.
 
-Code relating to this organization has not been commented out.
+Do I<not> delete this organization! It is needed. The delete/update organization code checks to ensure you
+do not delete it with this module, but of course there is always the possibility that you delete it using
+some other tool.
 
-Do I<not> delete this organization! It is needed.
+=head2 What data files have fake data in them?
 
-You can search for all such special code with 'ack Special'. ack is part of App::Ack.
+Their names match "data/fake.$table_name.txt".
 
-=item What data files have fake data in them?
+=head2 Why use File::ShareDir and not File::HomeDir?
+
+Some CPAN testers test with users who do not have home directories.
+
+=head2 How many database handles are used?
+
+2. One for DBIx::Simple (See L<App::Office::Contacts::Util::Logger>), which is used throughout
+L<App::Office::Contacts::Database>, and one for L<Log::Handler::Output::DBI> (for which also see
+L<App::Office::Contacts::Util::Logger>), which is used just for logging.
+
+=head2 What scripts ship with this module?
+
+All scripts are shipped in the scripts/ directory.
 
 =over 4
 
-=item data/email_people.txt
+=item o check.org.cgi.fields.pl
 
-=item data/people.txt
+This compares the CGI form field names in the add_org_form CGI form to their equivalents in the
+Javascript in htdocs/assets/templates/app/office/contacts/web.page.tx, and reports discrepancies.
 
-=item data/phone_people.txt
+The form is shipped in docs/add.organization.form.html which I copied from the web page displayed
+when the program starts.
+
+=item o check.template.pl
+
+This just prints the output of a HTML template, to help debugging.
+
+=item o copy.config.pl
+
+This copy share/.htapp.office.contactcs.conf to a shared directory, as per the dist_dir() method in
+L<File::ShareDir>.
+
+=item o create.tables.pl
+
+This creates the database tables. See L</Creating and populating the database>.
+
+=item o drop.tables.pl
+
+This drops the database tables. See L</Creating and populating the database>.
+
+=item o export.as.csv.pl
+
+This exports just the name and upper-case name from the people table. This is not really useful,
+but does provide a template if you wish to expand the code.
+
+=item o find.config.pl
+
+This tells you where share/.htapp.office.contactcs.conf is installed, after running copy.config.pl.
+
+=item o populate.db.sh
+
+A bash script which runs a set of programs.
+
+Warning: This includes drop.tables.pl.
+
+=item o populate.fake.data.pl
+
+This populates some database tables. See L</Creating and populating the database>.
+
+=item o populate.tables.pl
+
+This populates vital database tables. See L</Creating and populating the database>.
+
+=item o utf8.1.pl
+
+This helps me fight the dread utf8.
+
+=item o utf8.2.pl
+
+This prints singly- and doubly-encoded and decoded string, as a debugging aid.
 
 =back
+
+=head1 TODO
+
+=over 4
+
+=item o report.tx has a hidden field 'report_id'
+
+This will be replaced with a menu when donations are re-implemented in V 2.00 of *::Donations.
+
+=item o Adjust focus after Enter is hit inputting occupations
+
+Currently, the focus goes to the Reset button and not the Add button in these cases (Occupation and Staff).
+
+=item o If Search or Report get an error, the status line turns red (good) but still says OK (bad).
+
+The error message is lost in these cases, and I cannot explain that.
+
+=item o Should basic.table.tx be used instead of incorporating HTML in the source code?
+
+See View::*::format_*().
+
+The 2 enclosing divs in basic.table.tx could be optional, perhaps via a separate template.
+
+=item o Some View::*::report_*() methods do too much
+
+Code could be shifted into Database::*::save_*().
+
+=item o Add date-of-birth
+
+=item o Re-write L<App::Office::Contacts::Donations> for V 2.00
+
+=item o Re-write L<App::Office::Contacts::Import::vCards> for V 2.00
+
+=item o Write L<App::Office::Contacts::Sites> V 2.00
+
+This provides N sites per person or organization.
+
+The country/state/locality/postcode (zipcode) data will be shipped in SQLite format,
+as part of this module.
+
+Data for Australia and America with be included in the distro.
+
+Note: The country/etc data is imported into whatever database you choose to use for
+your contacts database, even if that is another SQLite database.
 
 =back
 
@@ -867,20 +891,20 @@ You can search for all such special code with 'ack Special'. ack is part of App:
 
 Email the author, or log a bug on RT:
 
-https://rt.cpan.org/Public/Dist/Display.html?Name=App-Office-Contacts
+L<https://rt.cpan.org/Public/Dist/Display.html?Name=App-Office-Contacts>.
 
 =head1 Author
 
 C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2009.
 
-Home page: http://savage.net.au/index.html
+L<Home page|http://savage.net.au/index.html>.
 
 =head1 Copyright
 
-Australian copyright (c) 2009, Ron Savage.
+Australian copyright (c) 2013, Ron Savage.
 	All Programs of mine are 'OSI Certified Open Source Software';
 	you can redistribute them and/or modify them under the terms of
-	The Artistic License, a copy of which is available at:
+	The Artistic License V 2, a copy of which is available at:
 	http://www.opensource.org/licenses/index.html
 
 =cut

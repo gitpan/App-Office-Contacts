@@ -1,12 +1,19 @@
 package App::Office::Contacts::Database::Occupation;
 
-use Moose;
+use strict;
+use utf8;
+use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
+
+use Encode; # For decode().
+
+use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-use namespace::autoclean;
-
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # --------------------------------------------------
 
@@ -14,108 +21,41 @@ sub add
 {
 	my($self, $occupation) = @_;
 
-	$self -> log(debug => 'Entered add');
-
+	$self -> db -> logger -> log(debug => 'Entered Database::Occupation.add()');
 	$self -> save_occupation_record('add', $occupation);
 
 } # End of add.
 
 # -----------------------------------------------
 
-sub delete_via_organization
+sub delete
 {
-	my($self, $organization_id, @occupation_id) = @_;
+	my($self, $occupation_id) = @_;
 
-	$self -> log(debug => 'Entered delete_via_organization');
+	$self -> db -> logger -> log(debug => "Entered Database::Occupation.delete($occupation_id)");
 
-	my($count) = $#occupation_id + 1;
-	my($sql)   = 'delete from occupations where organization_id = ? and id in (' . ('?, ') x $#occupation_id . '?)';
+	my($table_name) = 'occupations';
 
-	$self -> db -> dbh -> do($sql, {}, $organization_id, @occupation_id);
+	$self -> db -> simple -> delete($table_name, {id => $occupation_id})
+		|| die $self -> db -> simple -> error;
 
-	return $count;
-
-} # End of delete_via_organization.
-
-# -----------------------------------------------
-
-sub delete_via_person
-{
-	my($self, $person_id, @occupation_id) = @_;
-
-	$self -> log(debug => 'Entered delete_via_person');
-
-	my($count) = $#occupation_id + 1;
-	my($sql)   = 'delete from occupations where person_id = ? and id in (' . ('?, ') x $#occupation_id . '?)';
-
-	$self -> db -> dbh -> do($sql, {}, $person_id, @occupation_id);
-
-	return $count;
-
-} # End of delete_via_person.
-
-# -----------------------------------------------
-
-sub get_occupation_id_via_name
-{
-	my($self, $name) = @_;
-
-	$self -> log(debug => "Entered get_occupation_id_via_name: $name");
-
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from occupation_titles where name = ?', {Slice => {} }, $name);
-
-	return $id ? $$id{'id'} : 0;
-
-} # End of get_occupation_id_via_name.
-
-# -----------------------------------------------
-
-sub get_occupation_id_via_person
-{
-	my($self, $person_id) = @_;
-
-	$self -> log(debug => "Entered get_occupation_id_via_person: $person_id");
-
-	return $self -> db -> dbh -> selectall_arrayref('select * from occupations where person_id = ?', {Slice => {} }, $person_id) || [];
-
-} # End of get_occupation_id_via_person.
+} # End of delete.
 
 # -----------------------------------------------
 
 sub get_occupation_title_via_id
 {
 	my($self, $id) = @_;
+	my($result)    = $self -> db -> simple -> query('select name from occupation_titles where id = ?', $id)
+		|| die $self -> db -> simple -> error;
 
-	$self -> log(debug => "Entered get_occupation_title_via_id: $id");
+	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# rather than calling $self -> db -> library -> decode_list(...).
+	# And list() implies there is just 1 matching record.
 
-	my($name) = $self -> db -> dbh -> selectrow_hashref("select name from occupation_titles where id = ?", {Slice => {} }, $id);
-
-	return $name ? $$name{'name'} : '';
+	return decode('utf8', ($result -> list)[0] || '');
 
 } # End of get_occupation_title_via_id.
-
-# -----------------------------------------------
-
-sub get_occupation_titles_via_name_prefix
-{
-	my($self, $prefix) = @_;
-
-	$self -> log(debug => "Entered get_occupation_titles_via_name_prefix: $prefix");
-
-	$prefix      = uc $prefix;
-	my($id2name) = $self -> db -> dbh -> select_map("select id, name from occupation_titles where upper(name) like '$prefix%'");
-
-	my($id);
-	my(@result);
-
-	for $id (keys %$id2name)
-	{
-		push @result, [$$id2name{$id}, $id];
-	}
-
-	return [@result];
-
-} # End of get_occupation_titles_via_name_prefix.
 
 # -----------------------------------------------
 
@@ -123,19 +63,17 @@ sub get_occupation_via_id
 {
 	my($self, $occupation) = @_;
 
-	$self -> log(debug => 'Entered get_occupation_via_id');
+	$self -> db -> logger -> log(debug => 'Entered Database::Occupation.get_occupation_via_id(...)');
 
-	my($person)            = $self -> db -> person -> get_person_via_id($$occupation{'person_id'});
-	my($organization)      = $self -> db -> organization -> get_organization_via_id($$occupation{'organization_id'});
-	my($title)             = $self -> get_occupation_title_via_id($$occupation{'occupation_title_id'});
+	my($organization_name) = $self -> db -> organization -> get_organization_name($$occupation{organization_id});
+	my($occupation_title)  = $self -> get_occupation_title_via_id($$occupation{occupation_title_id});
 
 	return
 	{
-		title             => $title,
-		organization_id   => $$occupation{'organization_id'},
-		organization_name => $$organization{'name'},
-		person_id         => $$person{'id'},
-		person_name       => $$person{'name'},
+		occupation_title  => $occupation_title,
+		organization_id   => $$occupation{organization_id},
+		organization_name => $organization_name,
+		person_id         => $$occupation{person_id},
 	};
 
 } # End of get_occupation_via_id.
@@ -146,11 +84,33 @@ sub get_occupation_via_organization
 {
 	my($self, $organization_id) = @_;
 
-	$self -> log(debug => "Entered get_occupation_via_organization: $organization_id");
+	$self -> db -> logger -> log(debug => "Entered Database::Occupation.get_occupation_via_organization($organization_id)");
 
-	return $self -> db -> dbh -> selectall_arrayref('select * from occupations where organization_id = ?', {Slice => {} }, $organization_id) || [];
+	my($result) = $self -> db -> simple -> query('select * from occupations where organization_id = ?', $organization_id)
+					|| die $self -> db -> simple -> error;
+
+	# The columns in the occupations table are all integers, so we don't need to call decode('utf8', $x).
+
+	return [$result -> hashes];
 
 } # End of get_occupation_via_organization.
+
+# -----------------------------------------------
+
+sub get_occupation_via_person
+{
+	my($self, $person_id) = @_;
+
+	$self -> db -> logger -> log(debug => "Entered Database::Occupation.get_occupation_via_person($person_id)");
+
+	my($result) = $self -> db -> simple -> query('select * from occupations where person_id = ?', $person_id)
+					|| die $self -> db -> simple -> error;
+
+	# The columns in the occupations table are all integers, so we don't need to call decode('utf8', $x).
+
+	return [$result -> hashes];
+
+} # End of get_occupation_via_person.
 
 # --------------------------------------------------
 
@@ -158,12 +118,11 @@ sub save_occupation_record
 {
 	my($self, $context, $occupation) = @_;
 
-	$self -> log(debug => 'Entered save_occupation_record');
+	$self -> db -> logger -> log(debug => "Entered Database::Occupation.save_occupation_record($context, ...)");
 
-	my($table_name) = 'occupations';
-	my(@field)      = (qw/creator_id occupation_title_id organization_id person_id/);
-	my($data)       = {};
-	my(%id)         =
+	my(@field) = (qw/creator_id occupation_title_id organization_id person_id/);
+	my($data)  = {};
+	my(%id)    =
 	(
 	 creator          => 1,
 	 occupation_title => 1,
@@ -187,19 +146,16 @@ sub save_occupation_record
 		$$data{$field_name} = $$occupation{$_};
 	}
 
+	my($table_name) = 'occupations';
+
 	if ($context eq 'add')
 	{
-		$self -> util -> insert_hash_get_id($table_name, $data);
-
-		$$occupation{'id'} = $$data{'id'} = $self -> util -> last_insert_id($table_name);
+		$$occupation{id} = $$data{id} = $self -> db -> library -> insert_hash_get_id($table_name, $data);
 	}
 	else
 	{
-		# TODO.
-
-		my($sql) = "update $table_name set where id = $$occupation{'id'}";
-
-	 	$self -> db -> dbh -> do($sql, {}, $data);
+		$self -> db -> simple -> update($table_name, $data, {id => $$occupation{id} })
+			|| die $self -> db -> simple -> error;
 	}
 
 } # End of save_occupation_record.
@@ -208,65 +164,119 @@ sub save_occupation_record
 
 sub save_occupation_title
 {
-	my($self, $title, $creator_id) = @_;
+	my($self, $title) = @_;
+	my($uc_title)     = encode('utf8', uc decode('utf8', $title) );
 
-	$self -> log(debug => 'Entered save_occupation_title');
-
-	my($data)       = {name => $title};
-	my($table_name) = 'occupation_titles';
-
-	$self -> util -> insert_hash_get_id($table_name, $data);
-
-	my($id) = $self -> db -> dbh -> last_insert_id($table_name);
-
-	return $id;
+	$self -> db -> logger -> log(debug => "Entered Database::Occupation.save_occupation_title($title)");
+	$self -> db -> simple -> insert('occupation_titles', {name => $title, upper_name => $uc_title})
+		|| die $self -> db -> simple -> error;
 
 } # End of save_occupation_title.
 
 # --------------------------------------------------
 
-sub validate_occupation_ac_name
-{
-	my($self, $value) = @_;
-
-	$self -> log(debug => 'Entered validate_occupation_ac_name');
-
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from occupation_titles where name = ?', {Slice => {} }, $value);
-
-	return $id ? $$id{'id'} : 0;
-
-} # End of validate_occupation_ac_name.
-
-# --------------------------------------------------
-
-sub validate_organization_ac_name
-{
-	my($self, $value) = @_;
-
-	$self -> log(debug => 'Entered validate_organization_ac_name');
-
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from organizations where name = ?', {Slice => {} }, $value);
-
-	return $id ? $$id{'id'} : 0;
-
-} # End of validate_organization_ac_name.
-
-# --------------------------------------------------
-
-sub validate_person_ac_name
-{
-	my($self, $value) = @_;
-
-	$self -> log(debug => 'Entered validate_person_ac_name');
-
-	my($id) = $self -> db -> dbh -> selectrow_hashref('select id from people where name = ?', {Slice => {} }, $value);
-
-	return $id ? $$id{'id'} : 0;
-
-} # End of validate_person_ac_name.
-
-# --------------------------------------------------
-
-__PACKAGE__ -> meta -> make_immutable;
-
 1;
+
+=head1 NAME
+
+App::Office::Contacts::Database::Occupation - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+This module extends L<App::Office::Contacts::Database::Base>, with these attributes:
+
+=over 4
+
+=item o (None)
+
+=back
+
+=head1 Methods
+
+=head2 add($occupation)
+
+Adds the occupation to the I<occupations> table.
+
+=head2 delete($occupation_id)
+
+Deletes the occupation from the I<occupations> table.
+
+=head2 get_occupation_title_via_id($id)
+
+Returns the occupation title with the given $id.
+
+=head2 get_occupation_via_id($occupation)
+
+Returns a hashref for the occupation with the given $id. Keys in this hashref are:
+
+=over 4
+
+=item o occupation_title
+
+=item o organization_id
+
+=item o organization_name
+
+=item o person_id
+
+=back
+
+=head2 get_occupation_via_organization($organization_id)
+
+Returns an arrayref of hashrefs where the occupation has the given $organization_id.
+
+Keys in the hashref are column names from the I<occupations> table.
+
+=head2 get_occupation_via_person($person_id)
+
+Returns an arrayref of hashrefs where the occupation has the given $person_id.
+
+Keys in the hashref are column names from the I<occupations> table.
+
+=head2 save_occupation_record($context, $occupation)
+
+Saves the given $occupation to the I<occupations> table. $context is 'add'.
+
+=head2 save_occupation_title($title)
+
+Saves the given $title to the I<occupation_titles> table.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut

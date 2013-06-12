@@ -6,14 +6,14 @@
 # Description:
 #	Drop all tables in the 'contacts' database.
 
-use lib '/home/ron/perl.modules/CGI-Office-Contacts/lib';
 use strict;
 use warnings;
 
-use Getopt::Long;
-use Pod::Usage;
-
 use App::Office::Contacts::Util::Create;
+
+use Getopt::Long;
+
+use Pod::Usage;
 
 # --------------------
 
@@ -28,7 +28,7 @@ if ($option_parser -> getoptions
  'verbose',
 ) )
 {
-	pod2usage(1) if ($option{'help'});
+	pod2usage(1) if ($option{help});
 
 	exit App::Office::Contacts::Util::Create -> new(%option) -> drop_all_tables;
 }

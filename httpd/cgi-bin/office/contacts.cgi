@@ -7,18 +7,18 @@ use strict;
 use warnings;
 
 use CGI;
-use CGI::Application::Dispatch;
+use CGI::Snapp::Dispatch;
 
 # ---------------------
 
-CGI::Application::Dispatch -> dispatch
+CGI::Snapp::Dispatch -> new -> dispatch
 (
  args_to_new => {QUERY => CGI -> new},
  prefix      => 'App::Office::Contacts::Controller',
  table       =>
  [
-  ''              => {app => 'Initialize', rm => 'display'},
-  ':app'          => {rm => 'display'},
-  ':app/:rm/:id?' => {},
+  ''         => {app => 'Initialize', rm => 'display'},
+  ':app'     => {rm => 'display'},
+  ':app/:rm' => {},
  ],
 );

@@ -1,101 +1,165 @@
 package App::Office::Contacts::Util::Config;
 
 use strict;
+use utf8;
 use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
 
 use Config::Tiny;
 
-use File::HomeDir;
+use File::ShareDir;
 
-use Moose;
-
-use Path::Class;
-
-has config =>
-(
- is       => 'rw',
- isa      => 'Any',
- required => 0,
-);
-
-has config_file_path =>
-(
- is       => 'rw',
- isa      => 'Path::Class::File',
- required => 0,
-);
+use Moo;
 
 has config_name =>
 (
- default  => '.htoffice.contacts.conf',
- is       => 'rw',
- isa      => 'Str',
- required => 0,
+	default  => '.htapp.office.contacts.conf',
+	is       => 'rw',
+	#isa     => 'Str',
+	required => 0,
 );
 
-has section =>
+has config_path =>
 (
- is       => 'rw',
- isa      => 'Str',
- required => 0,
+	default  => sub{return ''},
+	is       => 'rw',
+	#isa     => 'Str',
+	required => 0,
 );
 
-use namespace::autoclean;
+has module_config =>
+(
+	default  => sub{return {} },
+	is       => 'rw',
+	#isa     => 'HashRef',
+	required => 1,
+);
 
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
 sub BUILD
 {
-	my($self) = @_;
-	my($path) = Path::Class::file(File::HomeDir -> my_dist_config('App-Office-Contacts'), $self -> config_name);
+	my($self)       = @_;
+	my($module_dir) = 'App::Office::Contacts' =~ s/::/-/gr;
+	my($path)       = File::ShareDir::dist_file($module_dir, $self -> config_name);
 
-	$self -> init($path);
+	$self -> module_config($self -> _init_config($path) );
 
 } # End of BUILD.
 
 # -----------------------------------------------
 
-sub init
+sub _init_config
 {
 	my($self, $path) = @_;
 
-	$self -> config_file_path($path);
+	$self -> config_path($path);
 
 	# Check [global].
 
-	$self -> config(Config::Tiny -> read($path) );
+	my($config) = Config::Tiny -> read($path);
 
-	if (Config::Tiny -> errstr)
+	die 'Error: ' . Config::Tiny -> errstr . "\n" if (Config::Tiny -> errstr);
+
+	my($section);
+
+	for my $i (1 .. 2)
 	{
-		die Config::Tiny -> errstr;
+		$section = $i == 1 ? 'global' : $$config{$section}{host};
+
+		die "Error: Config file '$path' does not contain the section [$section]\n" if (! $$config{$section});
 	}
 
-	$self -> section('global');
+	return $$config{$section};
 
-	if (! ${$self -> config}{$self -> section})
-	{
-		die "Config file '$path' does not contain the section [@{[$self -> section]}]";
-	}
-
-	# Check [x] where x is host=x within [global].
-
-	$self -> section(${$self -> config}{$self -> section}{'host'});
-
-	if (! ${$self -> config}{$self -> section})
-	{
-		die "Config file '$path' does not contain the section [@{[$self -> section]}]";
-	}
-
-	# Move desired section into config, so caller can just use $self -> config to get a hashref.
-
-	$self -> config(${$self -> config}{$self -> section});
-
-}	# End of init.
+}	# End of _init_config.
 
 # --------------------------------------------------
 
-__PACKAGE__ -> meta -> make_immutable;
-
 1;
+
+=head1 NAME
+
+App::Office::Contacts::Util::Config - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+See also scripts/copy.config.pl.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+Each instance of this class is a L<Moo>-based object, with these attributes:
+
+=over 4
+
+=item o config_name
+
+Is a string with the value '.htapp.office.contacts.conf'.
+
+=item o config_path
+
+Is a string holding the path to the config file.
+
+=item o module_config
+
+Is a hashref of options read from C<share/.htapp.office.contacts.conf>.
+
+=back
+
+Further, each attribute name is also a method name.
+
+=head1 Methods
+
+=head2 config_name()
+
+Returns a string with the value '.htapp.office.contacts.conf'.
+
+=head2 config_path()
+
+Returns a string holding the path to the config file.
+
+=head2 module_config()
+
+Returns a hashref of options read from C<share/.htapp.office.contacts.conf>.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut

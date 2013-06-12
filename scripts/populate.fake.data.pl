@@ -6,14 +6,19 @@
 # Description:
 #	Populate some tables in the 'contacts' database.
 
-use lib '/home/ron/perl.modules/CGI-Office-Contacts/lib';
+use feature 'say';
 use strict;
+use utf8;
 use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
+
+use App::Office::Contacts::Util::Import;
 
 use Getopt::Long;
-use Pod::Usage;
 
-use App::Office::Contacts::Util::Create;
+use Pod::Usage;
 
 # --------------------
 
@@ -28,9 +33,9 @@ if ($option_parser -> getoptions
  'verbose+',
 ) )
 {
-	pod2usage(1) if ($option{'help'});
+	pod2usage(1) if ($option{help});
 
-	exit App::Office::Contacts::Util::Create -> new(%option) -> populate_fake_data;
+	exit App::Office::Contacts::Util::Import -> new(%option) -> populate_fake_data;
 }
 else
 {

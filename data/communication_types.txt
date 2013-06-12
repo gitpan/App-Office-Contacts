@@ -1,6 +1,7 @@
-# name
--
+name
+Any
 Email only
-Never
 Phone only
+SMS only
 Snail mail only
+Never

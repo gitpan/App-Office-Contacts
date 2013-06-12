@@ -2,111 +2,112 @@ package App::Office::Contacts::Controller::Initialize;
 
 use parent 'App::Office::Contacts::Controller';
 use strict;
+use utf8;
 use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
 
-# We don't use Moose because we isa CGI::Application.
+use Try::Tiny;
 
-our $VERSION = '1.17';
+# We don't use Moo because we isa CGI::Snapp.
 
-# -----------------------------------------------
-
-sub build_head_js
-{
-	my($self, $search_js) = @_;
-
-	$self -> log(debug => 'Entered build_head_js');
-
-	my($add_organization_js)    = $self -> param('view') -> organization -> build_add_organization_js;
-	my($add_person_js)          = $self -> param('view') -> person -> build_add_person_js;
-	my($detail_js)              = $self -> param('view') -> build_display_detail_js;
-	my($organization_notes_js)  = $self -> param('view') -> notes -> build_notes_js('organization');
-	my($person_notes_js)        = $self -> param('view') -> notes -> build_notes_js('person');
-	my($report_js)              = $self -> param('view') -> report -> build_update_report_js;
-	my($update_organization_js) = $self -> param('view') -> organization -> build_update_organization_js;
-	my($update_person_js)       = $self -> param('view') -> person -> build_update_person_js;
-
-	# These things are being declared globally within the web page.
-
-	my($head_js) = <<EJS;
-$detail_js
-$add_organization_js
-$update_organization_js
-$add_person_js
-$update_person_js
-$search_js
-$organization_notes_js
-$person_notes_js
-$report_js
-
-function make_organization_notes_focus(eve)
-{
-	document.organization_update_notes_form.note.focus();
-}
-
-function make_person_notes_focus(eve)
-{
-	document.person_update_notes_form.note.focus();
-}
-
-function make_report_focus(eve)
-{
-	//document.report_form.report_id.focus();
-}
-
-function make_search_name_focus(eve)
-{
-	document.search_form.target.focus();
-}
-
-function make_update_name_focus(eve)
-{
-	document.update_organization_form.name.focus();
-}
-
-function make_update_given_names_focus(eve)
-{
-	document.update_person_form.given_names.focus();
-}
-
-var inner_tab_set = new YAHOO.widget.TabView();
-var tab_set = new YAHOO.widget.TabView();
-
-// We have explicit variables so we can delete and recreate
-// them whenever another set of details are displayed.
-
-var about_tab;
-var add_tab;
-var search_tab;
-
-var add_person_tab;
-var person_tab;
-var person_notes_tab;
-
-var add_organization_tab;
-var organization_tab;
-var organization_notes_tab;
-
-var report_tab;
-
-EJS
-
-	return $head_js;
-
-} # End of build_head_js.
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
 sub display
 {
-	my($self)        = @_;
-	my($cookie_name) = 'contacts';
+	my($self) = @_;
 
-	$self -> log(debug => 'Entered display');
+	$self -> log(debug => 'Controller::Initialize.display()');
+	$self -> param('db') -> simple -> begin_work;
 
-	return $self -> build_web_page;
+	my($response);
+
+	try
+	{
+		$response = $self -> build_web_page;
+
+		$self -> param('db') -> simple -> commit;
+	}
+	catch
+	{
+		my($error) = $_;
+
+		$self -> param('db') -> simple -> rollback;
+
+		# Try to log the error despite the error.
+
+		$self -> log(error => "System error: $error");
+
+		$response = $self -> param('system_error');
+	};
+
+	return $response;
 
 } # End of display.
 
 # -----------------------------------------------
 
 1;
+
+=head1 NAME
+
+App::Office::Contacts::Controller::Initialize - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+Each instance of this class is an L<App::Office::Contacts::Controller>-based object with these attributes:
+
+=over 4
+
+=item o (None)
+
+=back
+
+=head1 Methods
+
+=head2 display()
+
+Outputs the default web page in response to the default run mode.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut

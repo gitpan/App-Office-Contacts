@@ -1,169 +1,163 @@
 package App::Office::Contacts::View::Organization;
 
-use Moose;
+use strict;
+use utf8;
+use warnings;
+use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
+use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+use charnames qw(:full :short);  # Unneeded in v5.16.
+
+use Moo;
+
+use Text::Xslate 'mark_raw';
 
 extends 'App::Office::Contacts::View::Base';
 
-use namespace::autoclean;
-
-our $VERSION = '1.17';
+our $VERSION = '2.00';
 
 # -----------------------------------------------
 
-sub build_add_organization_html
+sub add
+{
+	my($self, $user_id, $result) = @_;
+
+	$self -> db -> logger -> log(debug => "View::Organization.add($user_id, ...)");
+
+	# Force the user_id into the organizations's record, so it is available elsewhere.
+	# Note: This is the user_id of the person logged on.
+
+	my($organization)          = {};
+	$$organization{creator_id} = $user_id;
+
+	for my $field_name ($result -> valids)
+	{
+		$$organization{$field_name} = $result -> get_value($field_name) || '';
+	}
+
+	$self -> db -> logger -> log(debug => '-' x 50);
+	$self -> db -> logger -> log(debug => "Adding organization $$organization{name}...");
+	$self -> db -> logger -> log(debug => "$_ => $$organization{$_}") for sort keys %$organization;
+	$self -> db -> logger -> log(debug => '-' x 50);
+
+	return $self -> db -> organization -> add($organization);
+
+} # End of add.
+
+# -----------------------------------------------
+
+sub build_add_html
 {
 	my($self) = @_;
 
-	$self -> log(debug => 'Entered build_add_organization_html');
+	$self -> db -> logger -> log(debug => 'View::Org.build_add_html()');
 
-	my($html) = $self -> load_tmpl('update.organization.tmpl');
+	my($html) = $self -> db -> templater -> render
+	(
+		'organization.tx',
+		{
+			communication_type_id => mark_raw($self -> build_simple_menu('add_org', 'communication_type', 1) ),
+			context               => 'add',
+			email_field           => mark_raw($self -> build_email_menus('add_org', []) ),
+			facebook_tag          => '',
+			homepage              => '',
+			name                  => '',
+			organization_id       => 0,
+			phone_field           => mark_raw($self -> build_phone_menus('add_org', []) ),
+			roles                 => mark_raw($self -> build_simple_menu('add_org', 'role', 1) ),
+			sid                   => $self -> db -> session -> id,
+			twitter_tag           => '',
+			ucfirst_context       => 'Add',
+			visibility_id         => mark_raw($self -> build_simple_menu('add_org', 'visibility', 1) ),
+		}
+	);
 
-	$html -> param(action                => 201); # Add.
-	$html -> param(broadcasts            => $self -> build_select('broadcasts') );
-	$html -> param(communication_types   => $self -> build_select('communication_types') );
-	$html -> param(context               => 'add');
-	$html -> param(email_address_types_1 => $self -> build_select('email_address_types', '_1') );
-	$html -> param(email_address_types_2 => $self -> build_select('email_address_types', '_2') );
-	$html -> param(email_address_types_3 => $self -> build_select('email_address_types', '_3') );
-	$html -> param(email_address_types_4 => $self -> build_select('email_address_types', '_4') );
-	$html -> param(go                    => 'Add');
-	$html -> param(name                  => '');
-	$html -> param(phone_number_types_1  => $self -> build_select('phone_number_types', '_1') );
-	$html -> param(phone_number_types_2  => $self -> build_select('phone_number_types', '_2') );
-	$html -> param(phone_number_types_3  => $self -> build_select('phone_number_types', '_3') );
-	$html -> param(phone_number_types_4  => $self -> build_select('phone_number_types', '_4') );
-	$html -> param(reset_button          => 1);
-	$html -> param(result                => 'New organization');
-	$html -> param(roles                 => $self -> build_select('roles') );
-	$html -> param(sid                   => $self -> session -> id);
-	$html -> param(target_id             => 0);
+	# Make browser happy by turning the HTML into 1 long line.
 
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$html = $html -> output;
 	$html =~ s/\n//g;
 
 	return $html;
 
-} # End of build_add_organization_html.
+} # End of build_add_html.
 
 # -----------------------------------------------
 
-sub build_add_organization_js
+sub build_tab_html
 {
-	my($self) = @_;
+	my($self, $organization, $occupations, $notes) = @_;
 
-	$self -> log(debug => 'Entered build_add_organization_js');
+	$self -> db -> logger -> log(debug => "View::Org.build_tab_html($$organization{name}, ...)");
 
-	my($js) = $self -> load_tmpl('update.organization.js');
+	my(@tab) =
+	(
+		{
+			body   => mark_raw($self -> build_update_html($organization) ),
+			header => 'Update organization',
+			name   => 'org_detail_tab',
+		},
+		{
+			body   => mark_raw($self -> view -> occupation -> build_staff_html($organization, $occupations) ),
+			header => 'Staff',
+			name   => 'org_staff_tab',
+		},
+		{
+			body   => mark_raw($self -> view -> note -> build_organization_html($organization, $notes) ),
+			header => 'Notes',
+			name   => 'person_note_tab',
+		},
+	);
 
-	$js -> param(context     => 'add');
-	$js -> param(form_action => $self -> form_action);
+	my($template) = $self -> db -> templater -> render
+	(
+		'tab.tx',
+		{
+			list => [@tab],
+			div  => 'update_org_tab',
+		}
+	);
 
-	return $js -> output;
+	return $template;
 
-} # End of build_add_organization_js.
+} # End of build_tab_html.
 
 # -----------------------------------------------
 
-sub build_update_organization_html
+sub build_update_html
 {
-	my($self, $target_id, $organization) = @_;
+	my($self, $organization) = @_;
 
-	$self -> log(debug => 'Entered build_update_organization_html');
+	$self -> db -> logger -> log(debug => "View::Org.build_update_html(...)");
 
-	my($template) = $self -> load_tmpl('update.organization.tmpl');
-
-	$template -> param(action              => 205); # Update.
-	$template -> param(broadcasts          => $self -> build_select('broadcasts', '', $$organization{'broadcast_id'}) );
-	$template -> param(communication_types => $self -> build_select('communication_types', '', $$organization{'communication_type_id'}) );
-	$template -> param(context             => 'update');
-	$template -> param(go                  => 'Update');
-	$template -> param(home_page           => $$organization{'home_page'});
-	$template -> param(name                => $$organization{'name'});
-	$template -> param(reset_button        => 0);
-	$template -> param(result              => $$organization{'name'});
-	$template -> param(roles               => $self -> build_select('roles', '', $$organization{'role_id'}) );
-	$template -> param(sid                 => $self -> session -> id);
-	$template -> param(target_id           => $target_id);
-
-	my($email);
-	my($field);
-	my($i);
-	my($phone);
-	my($type);
-
-	# Hard-code 0 .. 3 email addresses and phone numbers.
-	# If we don't then less than 3 means the type menus don't appear,
-	# in which case we'd need a separate loop just to display them.
-
-	for $i (0 .. 3)
+	my($param) =
 	{
-		$email = $i <= $#{$$organization{'email_phone'} } ? $$organization{'email_phone'}[$i]{'email'} : {};
-		$phone = $i <= $#{$$organization{'email_phone'} } ? $$organization{'email_phone'}[$i]{'phone'} : {};
-		$field = 'email_' . ($i + 1);
-		$type  = 'email_address_types_' . ($i + 1);
+		communication_type_id => mark_raw($self -> build_simple_menu('update_org', 'communication_type', $$organization{communication_type_id}) ),
+		context               => 'update',
+		email_field           => mark_raw($self -> build_email_menus('update_org', $$organization{email_phone}) ),
+		facebook_tag          => mark_raw($$organization{facebook_tag}),
+		homepage              => mark_raw($$organization{homepage}),
+		id                    => $$organization{id},
+		name                  => mark_raw($$organization{name}),
+		org_id                => $$organization{id},
+		phone_field           => mark_raw($self -> build_phone_menus('update_org', $$organization{email_phone}) ),
+		roles                 => mark_raw($self -> build_simple_menu('update_org', 'role', $$organization{role_id}) ),
+		sid                   => $self -> db -> session -> id,
+		twitter_tag           => mark_raw($$organization{twitter_tag}),
+		ucfirst_context       => 'Update',
+		visibility_id         => mark_raw($self -> build_simple_menu('update_org', 'visibility', $$organization{visibility_id}) ),
+	};
 
-		if ($$email{'address'})
-		{
-			$template -> param($field => $$email{'address'});
-		}
+	my($template) = $self -> db -> templater -> render
+	(
+		'organization.tx',
+		$param
+	);
 
-		$template -> param($type => $self -> build_select('email_address_types', '_' . ($i + 1), $$email{'type_id'} || 1) );
+	# Make browser happy by turning the HTML into 1 long line.
 
-		$field = 'phone_' . ($i + 1);
-		$type  = 'phone_number_types_' . ($i + 1);
-
-		if ($$phone{'number'})
-		{
-			$template -> param($field => $$phone{'number'});
-		}
-
-		$template -> param($type => $self -> build_select('phone_number_types', '_' . ($i + 1), $$phone{'type_id'} || 1) );
-	}
-
-	my($link);
-	my(@people);
-
-	for $field (@{$$organization{'people'} })
-	{
-		$link = qq|<a href="#tab1" onClick="display_person($$field{'person_id'})">$$field{'person_name'}</a>|;
-
-		push @people,
-		{
-			occupation_id => $$field{'occupation_id'},
-			name          => $link,
-			title         => $$field{'occupation_title'},
-		};
-	}
-
-	$template -> param(people_loop => [@people]);
-
-	# Make YUI happy by turning the HTML into 1 long line.
-
-	$template = $template -> output;
 	$template =~ s/\n//g;
 
 	return $template;
 
-} # End of build_update_organization_html.
-
-# -----------------------------------------------
-
-sub build_update_organization_js
-{
-	my($self) = @_;
-
-	$self -> log(debug => 'Entered build_update_organization_js');
-
-	my($js) = $self -> load_tmpl('update.organization.js');
-
-	$js -> param(context     => 'update');
-	$js -> param(form_action => $self -> form_action);
-
-	return $js -> output;
-
-} # End of build_update_organization_js.
+} # End of build_update_html.
 
 # -----------------------------------------------
 
@@ -171,35 +165,39 @@ sub format_search_result
 {
 	my($self, $name, $organizations) = @_;
 
-	$self -> log(debug => 'Entered format_search_result');
+	$self -> db -> logger -> log(debug => "View::Org.format_search_result($name, @{[scalar @$organizations]})");
 
 	my(@row);
 
 	if ($name && ($#$organizations >= 0) )
 	{
-		my($email);
+		my($sid) = $self -> db -> session -> id;
+
+		my($email, $email_address);
 		my($i);
 		my($organization);
 		my($phone);
 
 		for $organization (@$organizations)
 		{
-			$name = $$organization{'name'};
+			$name = $$organization{name};
 
-			for $i (0 .. $#{$$organization{'email_phone'} })
+			for $i (0 .. $#{$$organization{email_phone} })
 			{
-				$email  = $$organization{'email_phone'}[$i]{'email'};
-				$phone  = $$organization{'email_phone'}[$i]{'phone'};
+				$email         = $$organization{email_phone}[$i]{email};
+				$email_address = $$email{address} ? mark_raw(qq|<a href="mailto:$$email{address}">$$email{address}</a>|) : '';
+				$phone         = $$organization{email_phone}[$i]{phone};
 
 				push @row,
 				{
-					email      => qq|<a href="mailto:$$email{'address'}">$$email{'address'}</a>|,
-					email_type => $$email{'type_name'},
-					id         => $$organization{'id'},
-					name       => $name ? qq|<a href="#tab1" onClick="display_organization($$organization{'id'})">$name</a>| : '',
-					phone      => $$phone{'number'},
-					phone_type => $$phone{'type_name'},
-					role       => $name ? $self -> db -> util -> get_role_via_id($$organization{'role_id'}) : '',
+					email      => $email_address,
+					email_type => $$email{type_name},
+					id         => $$organization{id},
+					name       => $name ? mark_raw(qq|<a href="#" onClick="display_organization($$organization{id}, '$sid')">$name</a>|) : '-',
+					phone      => $$phone{number},
+					phone_type => $$phone{type_name},
+					role       => $name ? mark_raw($self -> db -> library -> get_role_via_id($$organization{role_id}) ) : '-',
+					type       => 'Organization',
 				};
 
 				# Blanking out the name means it is not repeated in the output (HTML) table.
@@ -215,92 +213,113 @@ sub format_search_result
 
 # -----------------------------------------------
 
-sub report_add
+sub update
 {
 	my($self, $user_id, $result) = @_;
 
-	$self -> log(debug => 'Entered report_add');
+	$self -> db -> logger -> log(debug => "View::Organization.update($user_id, ...)");
 
-	my($template) = $self -> load_tmpl('update.report.tmpl');
+	# Force the user_id into the person's record, so it is available elsewhere.
+	# Note: This is the user_id of the person logged on.
 
-	if ($result -> success)
+	my($organization)          = {};
+	$$organization{creator_id} = $user_id;
+	$$organization{id}         = $result -> get_value('organization_id');
+
+	for my $field_name ($result -> valids)
 	{
-		# Force the user_id into the organizations's record, so it is available elsewhere.
-		# Note: This is the user_id of the person logged on.
-
-		my($organization)            = {};
-		$$organization{'creator_id'} = $user_id;
-
-		for my $field_name ($result -> valids)
-		{
-			$$organization{$field_name} = $result -> get_value($field_name) || '';
-		}
-
-		$self -> log(debug => '-' x 50);
-		$self -> log(debug => "Adding organization $$organization{'name'}...");
-		$self -> log(debug => "$_ => $$organization{$_}") for sort keys %$organization;
-		$self -> log(debug => '-' x 50);
-
-		$template -> param(message => $self -> db -> organization -> add($organization) );
-	}
-	else
-	{
-		$self -> db -> util -> build_error_report($result, $template);
-
-		$template -> param(message => 'Failed to add organization');
+		$$organization{$field_name} = $result -> get_value($field_name) || '';
 	}
 
-	return $template -> output;
+	$self -> db -> logger -> log(debug => '-' x 50);
+	$self -> db -> logger -> log(debug => "Updating organization $$organization{name}...");
+	$self -> db -> logger -> log(debug => "$_ => $$organization{$_}") for sort keys %$organization;
+	$self -> db -> logger -> log(debug => '-' x 50);
 
-} # End of report_add.
+	return $self -> db -> organization -> update($organization);
+
+} # End of update.
 
 # -----------------------------------------------
-
-sub report_update
-{
-	my($self, $user_id, $id, $result) = @_;
-
-	$self -> log(debug => 'Entered report_update');
-
-	my($template) = $self -> load_tmpl('update.report.tmpl');
-
-	if ($result -> success)
-	{
-		# Force the user_id into the person's record, so it is available elsewhere.
-		# Note: This is the user_id of the person logged on.
-
-		my($organization)            = {};
-		$$organization{'creator_id'} = $user_id;
-
-		# Force the organization's id to be the id from the form.
-
-		$$organization{'id'} = $id;
-
-		for my $field_name ($result -> valids)
-		{
-			$$organization{$field_name} = $result -> get_value($field_name) || '';
-		}
-
-		$self -> log(debug => '-' x 50);
-		$self -> log(debug => "Updating organization $$organization{'name'}...");
-		$self -> log(debug => "$_ => $$organization{$_}") for sort keys %$organization;
-		$self -> log(debug => '-' x 50);
-
-		$template -> param(message => $self -> db -> organization -> update($organization) );
-	}
-	else
-	{
-		$self -> db -> util -> build_error_report($result, $template);
-
-		$template -> param(message => 'Failed to add organization');
-	}
-
-	return $template -> output;
-
-} # End of report_update.
-
-# -----------------------------------------------
-
-__PACKAGE__ -> meta -> make_immutable;
 
 1;
+
+=head1 NAME
+
+App::Office::Contacts::View::Organization - A web-based contacts manager
+
+=head1 Synopsis
+
+See L<App::Office::Contacts/Synopsis>.
+
+=head1 Description
+
+L<App::Office::Contacts> implements a utf8-aware, web-based, private and group contacts manager.
+
+=head1 Distributions
+
+See L<App::Office::Contacts/Distributions>.
+
+=head1 Installation
+
+See L<App::Office::Contacts/Installation>.
+
+=head1 Object attributes
+
+Each instance of this class extends L<App::Office::Contacts::View::Base>, with these attributes:
+
+=over 4
+
+=item o (None)
+
+=back
+
+=head1 Methods
+
+=head2 add($user_id, $result)
+
+Adds an organization.
+
+=head2 build_add_html()
+
+Returns the HTML for the 'Add Organization' tab.
+
+=head2 build_tab_html($organization, $occupations, $notes)
+
+Returns the HTML for the 3 tabs: 'Update Organization', 'Add Staff' and 'Add Notes'.
+
+=head2 build_update_html($organization)
+
+Returns the HTML for the 'Update Organization' tab.
+
+=head2 format_search_result($name, $organizations)
+
+Returns the HTML for the result of searching for organizations.
+
+=head2 update($user_id, $result)
+
+Updates an organization.
+
+=head1 FAQ
+
+See L<App::Office::Contacts/FAQ>.
+
+=head1 Support
+
+See L<App::Office::Contacts/Support>.
+
+=head1 Author
+
+C<App::Office::Contacts> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2013.
+
+L<Home page|http://savage.net.au/index.html>.
+
+=head1 Copyright
+
+Australian copyright (c) 2013, Ron Savage.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License V 2, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
+
+=cut
