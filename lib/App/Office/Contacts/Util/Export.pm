@@ -27,7 +27,7 @@ has whole_page =>
 	required => 0,
 );
 
-our $VERSION = '1.01';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 

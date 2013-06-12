@@ -13,7 +13,7 @@ extends 'App::Office::Contacts::View::Base';
 
 with 'App::Office::Contacts::View::Role::Report';
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 

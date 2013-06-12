@@ -11,7 +11,7 @@ use Moo::Role;
 
 use Text::Xslate 'mark_raw';
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 

@@ -14,7 +14,7 @@ use Text::Xslate 'mark_raw';
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 
@@ -363,16 +363,21 @@ Please realize that if you edit this file, you must ensure the copy you are edit
 is the one used by the code at run-time.
 
 After a module such as this is installed, the code will look for that file
-in the directory where Makefile.PL has installed the code.
+in the directory where I<you> have installed this config file, by running:
+
+	shell> perl scripts/copy.config.pl
 
 The module which reads the file is L<App::Office::Contacts::Util::Config>.
 
-Makefile.PL installs C<.htoffice.contacts.conf> into a shared directory.
+scripts/copy.config.pl installs C<.htoffice.contacts.conf> into a shared directory.
 
 So, if you unpack the distro and edit the file within the unpacked code, you will still need
 to copy the patched version by running:
 
-	perl scripts/copy.config.pl
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 There is no need to restart your web server after updating this file.
 
@@ -389,6 +394,13 @@ V 1.9.4 was used too.
 
 See C<share/.htoffice.contacts.conf>, around lines 23 .. 25 and 61 .. 63, where it
 specifies the URLs used by the code to access these libs.
+
+As always, do this after patching the config file:
+
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =head3 The database server
 
@@ -409,6 +421,13 @@ Then, to view the database after using the shipped Perl scripts to create and po
 
 If you use another server, patch C<share/.htoffice.contacts.conf>,
 around lines 22 and 36, where it specifies the database DSN and the CGI::Session driver.
+
+As always, do this after patching the config file:
+
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =head2 Installing the module
 
@@ -447,7 +466,7 @@ by L<Text::Xslate>.
 
 For that, see C<share/.htoffice.contacts.conf> as discussed above.
 
-Before editing the config file, ensure you run C<scripts/copy.config.pl>. It will copy
+After editing the config file, ensure you run C<scripts/copy.config.pl>. It will copy
 the config file using L<File::ShareDir>, to a directory where the run-time code in
 L<App::Office::Contacts> will look for it.
 
@@ -455,7 +474,7 @@ L<App::Office::Contacts> will look for it.
 	shell>perl scripts/copy.config.pl
 	shell>perl scripts/find.config.pl
 
-Then, edit the installed copy rather than the copy shipped with the distro.
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =head3 Install the FAQ web page
 
@@ -469,6 +488,13 @@ A sample page is shipped in C<htdocs/assets/templates/app/office/contacts/faq.ht
 
 So, copying the C<htdocs/assets/> directory, as above, will have installed this file.
 Alternately, replace it with your own.
+
+As always after editing the config file, run:
+
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =head3 Install the trivial CGI script and the Plack script
 
@@ -509,9 +535,12 @@ That is, Perl does not use the installed version of the code, if any.
 
 If you unpack the distro, and run:
 
-	perl scripts/copy.config.pl
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
 
 it will copy the config file to the install dir, and report where it is.
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =back
 
@@ -639,6 +668,13 @@ The command is:
 
 The username and password are as shipped in C<share/.htapp.office.contacts.conf>.
 
+As always after editing the config file, run:
+
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
+
 =head2 Why do the email_addresses and phone_numbers tables have upper-case fields?
 
 Because the search feature always uses upper-case. And, e.g., phones can have eXtension information built-in,
@@ -659,6 +695,13 @@ Engine type defaults to innodb when you use MySQL in the dsn.
 
 See C<share/.htapp.office.contacts.conf> for the dsn and the source code of L<App::Office::Contacts::Util::Create>
 for the create statements.
+
+As always after editing the config file, run:
+
+	shell> perl scripts/copy.config.pl
+	shell> perl scripts/find.config.pl (as a cross-check)
+
+Alternately, edit the installed copy rather than the copy shipped with the distro.
 
 =head2 How do I add tables to the schema?
 
@@ -872,6 +915,8 @@ Code could be shifted into Database::*::save_*().
 =item o Re-write L<App::Office::Contacts::Donations> for V 2.00
 
 =item o Re-write L<App::Office::Contacts::Import::vCards> for V 2.00
+
+Done.
 
 =item o Write L<App::Office::Contacts::Sites> V 2.00
 

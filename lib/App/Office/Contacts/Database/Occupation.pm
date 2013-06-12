@@ -13,7 +13,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # --------------------------------------------------
 

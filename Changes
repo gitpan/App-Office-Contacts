@@ -1,5 +1,9 @@
 Revision history for Perl extension App::Office::Contacts.
 
+2.01  Wed Jun 12 12:40:00 2013
+	- Update the POD regarding editing and copying the config file share/.htapp.office.contacts.conf,
+		now that the re-written Makefile.PL does not install it for you.
+
 2.00  Wed Jun 12 09:25:00 2013
 	- Warning: Some database tables have changed structures.
 	- Rename CHANGES to Changes as per CPAN::Changes::Spec.

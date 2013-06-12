@@ -37,7 +37,7 @@ has module_config =>
 	required => 1,
 );
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 

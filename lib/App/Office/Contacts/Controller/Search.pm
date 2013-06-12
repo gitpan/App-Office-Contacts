@@ -6,7 +6,7 @@ use App::Office::Contacts::Controller::Exporter::Search qw/-all/;
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 # -----------------------------------------------
 
