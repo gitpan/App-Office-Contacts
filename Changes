@@ -1,5 +1,24 @@
 Revision history for Perl extension App::Office::Contacts.
 
+2.02  Thu Nov 13 15:11:00 2013
+	- Replace decode/encode('utf8', $x) with decode/encode('utf-8', $x).
+	- Remove:
+		o use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
+		o use charnames qw(:full :short);  # Unneeded in v5.16.
+		The problem with 'use open ...' is that it's global.
+		The problem with 'use charnames ...' is that it simply wasn't used.
+		If you need 'use open ...', put in your scripts.
+	- Switch jQuery V 1.8.2 (inside DataTables V 1.9.4) to V 2.0.3 (standalone).
+		Note: homepage.tx includes $.uiBackCompat = false;.
+		DataTables V 1.9.4 is still used.
+	- Switch jQuery UI V 1.9.2 to V 1.10.3.
+	- Rename web.page.css to homepage.css.
+	- Rename web.page.tx to homepage.tx.
+	- Rename whole_page.tx to standalone.tx.
+	- Add an output_file option to scripts/export.as.csv.pl.
+		This patch includes using Text::CSV::Encoding to set the output I/O layer to utf-8.
+	- Add scripts/export.as.html.pl.
+
 2.01  Wed Jun 12 12:40:00 2013
 	- Update the POD regarding editing and copying the config file share/.htapp.office.contacts.conf,
 		now that the re-written Makefile.PL does not install it for you.

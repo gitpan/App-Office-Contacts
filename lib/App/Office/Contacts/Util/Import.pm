@@ -3,9 +3,7 @@ package App::Office::Contacts::Util::Import;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use App::Office::Contacts::Database;
 use App::Office::Contacts::Util::Logger;
@@ -42,7 +40,7 @@ has verbose =>
 	required => 0,
 );
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -83,7 +81,7 @@ sub dump
 	for $row (@record)
 	{
 		print "\t";
-		print map{"$_ => " . decode('utf8', $$row{$_}) . ". "} sort keys %$row;
+		print map{"$_ => " . decode('utf-8', $$row{$_}) . ". "} sort keys %$row;
 		print "\n";
 	}
 
@@ -272,7 +270,7 @@ sub populate_fake_organizations_table
 
 	for (@$data)
 	{
-		$$_{upper_name} = encode('utf8', uc $$_{name});
+		$$_{upper_name} = encode('utf-8', uc $$_{name});
 		$$_{timestamp}  = localstamp;
 
 		$self -> db -> simple -> insert($table_name, $_);
@@ -300,8 +298,8 @@ sub populate_fake_people_table
 		# Setting upper_given_names is for the search code.
 		# See App::Office::Contacts::Controller::Exporter::Search.
 
-		$$_{upper_given_names} = encode('utf8', uc $$_{given_names});
-		$$_{upper_name}        = encode('utf8', uc $$_{name});
+		$$_{upper_given_names} = encode('utf-8', uc $$_{given_names});
+		$$_{upper_name}        = encode('utf-8', uc $$_{name});
 		$$_{timestamp}         = localstamp;
 
 		$self -> db -> simple -> insert($table_name, $_);
@@ -366,7 +364,7 @@ sub populate_organizations_table
 
 	for (@$data)
 	{
-		$$_{upper_name} = encode('utf8', uc $$_{name});
+		$$_{upper_name} = encode('utf-8', uc $$_{name});
 		$$_{timestamp}  = localstamp;
 
 		$self -> db -> simple -> insert($table_name, $_);
@@ -671,13 +669,13 @@ Calls all the fake populate_*_table methods, in a special order so that foreign 
 
 =head2 populate_fake_organizations_table()
 
+=head2 populate_fake_people_table()
+
 =head2 populate_genders_table()
 
 =head2 populate_occupation_titles_table()
 
 =head2 populate_organizations_table()
-
-=head2 populate_people_table()
 
 =head2 populate_phone_number_types_table()
 

@@ -13,7 +13,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -52,7 +52,7 @@ sub get_email_address_id_via_address
 	my($result) = $self -> db -> simple -> query('select id from email_addresses where address = ?', $address)
 					|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -100,7 +100,7 @@ sub get_email_address_type_id_via_name
 	my($result) = $self -> db -> simple -> query('select id from email_address_types where name = ?', $name)
 					|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -118,7 +118,7 @@ sub get_email_address_type_name_via_id
 	my($result) = $self -> db -> simple -> query('select name from email_address_types where id = ?', $id)
 					|| die $self -> db -> simple -> error;
 
-	# Since we don't use utf8 in menus, so we don't need to call decode('utf8', ...).
+	# Since we don't use utf8 in menus, so we don't need to call decode('utf-8', ...).
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || '';
@@ -142,12 +142,12 @@ sub get_email_address_via_id
 	my(@address) = $result -> list;
 	my($name)    = $self -> get_email_address_type_name_via_id($address[1]);
 
-	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# Since only 1 field is utf8, we just call decode('utf-8', ...) below,
 	# rather than calling $self -> db -> library -> decode_list(...).
 
 	return
 	{
-		address   => decode('utf8', $address[0]),
+		address   => decode('utf-8', $address[0]),
 		type_id   => $address[1],
 		type_name => $name,
 	};

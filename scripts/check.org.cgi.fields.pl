@@ -21,7 +21,7 @@ my($inside) = 0;
 
 my(@add_list);
 
-for my $line (path("$$config{template_path}/web.page.tx") -> lines)
+for my $line (path("$$config{template_path}/homepage.tx") -> lines)
 {
 	if ($inside)
 	{
@@ -43,7 +43,7 @@ $inside = 0;
 my($s);
 my(@update_list);
 
-for my $line (path("$$config{template_path}/web.page.tx") -> lines)
+for my $line (path("$$config{template_path}/homepage.tx") -> lines)
 {
 	if ($inside)
 	{

@@ -3,9 +3,7 @@ package App::Office::Contacts::Controller::Exporter::Search;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use Encode; # For decode(), encode().
 
@@ -20,7 +18,7 @@ use Sub::Exporter -setup =>
 
 use Try::Tiny;
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -28,7 +26,7 @@ sub display
 {
 	my($self)   = @_;
 	my($key)    = $self -> query -> param('search_name') || '';
-	my($uc_key) = encode('utf8', uc decode('utf8', $key) );
+	my($uc_key) = encode('utf-8', uc decode('utf-8', $key) );
 
 	$self -> param('db') -> simple -> begin_work;
 	$self -> add_header('-Status' => 200, '-Content-Type' => 'text/xml; charset=utf-8');
@@ -85,7 +83,7 @@ sub display
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf8', $response);
+	return encode('utf-8', $response);
 
 } # End of display.
 
@@ -156,7 +154,7 @@ This is the run mode for Search.
 
 It finds matching records, removes duplicates, and formats the results.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head2 remove_duplicates(@arrayrefs)
 

@@ -3,9 +3,7 @@ package App::Office::Contacts::Util::Create;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use DBIx::Admin::CreateTable;
 
@@ -41,7 +39,7 @@ has verbose =>
 	required => 0,
 );
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 

@@ -18,17 +18,17 @@ my($copy)    = \$correct;
 say "Correct:        $correct";
 say "Original:       $$copy (not overwritten the way Encode used to do)";
 
-my($encoded)      = encode('utf8', $correct);
+my($encoded)      = encode('utf-8', $correct);
 my($utf8_encoded) = $correct;
 
 utf8::encode($utf8_encoded);
 
 say "Encoded:        $encoded";
 say "utf8::encode:   $utf8_encoded";
-say "Double encoded: ", encode('utf8', $encoded);
+say "Double encoded: ", encode('utf-8', $encoded);
 
-my($decoded) = decode('utf8', $correct);
+my($decoded) = decode('utf-8', $correct);
 
 say "Decoded: $decoded";
-#say "Double decoded: ", decode('utf8', $decoded);
+#say "Double decoded: ", decode('utf-8', $decoded);
 say "Original:       $$copy (not overwritten the way Encode used to do)";

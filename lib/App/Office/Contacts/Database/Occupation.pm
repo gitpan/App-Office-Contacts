@@ -13,7 +13,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # --------------------------------------------------
 
@@ -49,11 +49,11 @@ sub get_occupation_title_via_id
 	my($result)    = $self -> db -> simple -> query('select name from occupation_titles where id = ?', $id)
 		|| die $self -> db -> simple -> error;
 
-	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# Since only 1 field is utf8, we just call decode('utf-8', ...) below,
 	# rather than calling $self -> db -> library -> decode_list(...).
 	# And list() implies there is just 1 matching record.
 
-	return decode('utf8', ($result -> list)[0] || '');
+	return decode('utf-8', ($result -> list)[0] || '');
 
 } # End of get_occupation_title_via_id.
 
@@ -89,7 +89,7 @@ sub get_occupation_via_organization
 	my($result) = $self -> db -> simple -> query('select * from occupations where organization_id = ?', $organization_id)
 					|| die $self -> db -> simple -> error;
 
-	# The columns in the occupations table are all integers, so we don't need to call decode('utf8', $x).
+	# The columns in the occupations table are all integers, so we don't need to call decode('utf-8', $x).
 
 	return [$result -> hashes];
 
@@ -106,7 +106,7 @@ sub get_occupation_via_person
 	my($result) = $self -> db -> simple -> query('select * from occupations where person_id = ?', $person_id)
 					|| die $self -> db -> simple -> error;
 
-	# The columns in the occupations table are all integers, so we don't need to call decode('utf8', $x).
+	# The columns in the occupations table are all integers, so we don't need to call decode('utf-8', $x).
 
 	return [$result -> hashes];
 
@@ -165,7 +165,7 @@ sub save_occupation_record
 sub save_occupation_title
 {
 	my($self, $title) = @_;
-	my($uc_title)     = encode('utf8', uc decode('utf8', $title) );
+	my($uc_title)     = encode('utf-8', uc decode('utf-8', $title) );
 
 	$self -> db -> logger -> log(debug => "Entered Database::Occupation.save_occupation_title($title)");
 	$self -> db -> simple -> insert('occupation_titles', {name => $title, upper_name => $uc_title})

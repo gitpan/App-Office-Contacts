@@ -13,14 +13,14 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # --------------------------------------------------
 
 sub occupation_title
 {
 	my($self, $name) = @_;
-	$name = uc decode('utf8', $name);
+	$name = uc decode('utf-8', $name);
 
 	$self -> db -> logger -> log(debug => "Database::AutoComplete.occupation_title($name)");
 
@@ -38,7 +38,7 @@ sub occupation_title
 sub organization_name
 {
 	my($self, $name) = @_;
-	$name = uc decode('utf8', $name);
+	$name = uc decode('utf-8', $name);
 
 	$self -> db -> logger -> log(debug => "Database::AutoComplete.organization_name($name)");
 
@@ -56,7 +56,7 @@ sub organization_name
 sub person_name
 {
 	my($self, $name) = @_;
-	$name = uc decode('utf8', $name);
+	$name = uc decode('utf-8', $name);
 
 	$self -> db -> logger -> log(debug => "Database::AutoComplete.person_name($name)");
 

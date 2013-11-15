@@ -15,7 +15,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -122,7 +122,7 @@ sub decode_hashref_list
 
 	for my $item (@list)
 	{
-		$$item{$_} = decode('utf8', $$item{$_} || '') for keys %$item;
+		$$item{$_} = decode('utf-8', $$item{$_} || '') for keys %$item;
 
 		push @result, $item;
 	}
@@ -138,7 +138,7 @@ sub decode_list
 	my($self, @list) = @_;
 	@list            = () if ($#list < 0);
 
-	return [map{decode('utf8', $_ || '')} @list];
+	return [map{decode('utf-8', $_ || '')} @list];
 
 } # End of decode_list.
 
@@ -177,7 +177,7 @@ sub get_role_via_id
 	# list() should never return undef here.
 	# And list() implies there is just 1 matching record.
 
-	return decode('utf8', ($result -> list)[0] || '');
+	return decode('utf-8', ($result -> list)[0] || '');
 
 } # End of get_role_via_id.
 

@@ -3,9 +3,7 @@ package App::Office::Contacts::Database::PhoneNumber;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use Encode; # For decode().
 
@@ -13,7 +11,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -122,7 +120,7 @@ sub get_phone_number_id_via_number
 	my($result) = $self -> db -> simple -> query('select id from phone_numbers where number = ?', $number)
 					|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -170,7 +168,7 @@ sub get_phone_number_type_id_via_name
 	my($result) = $self -> db -> simple -> query('select id from phone_number_types where name = ?', $name)
 					|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -212,12 +210,12 @@ sub get_phone_number_via_id
 	my(@number) = $result -> list;
 	my($name)    = $self -> get_phone_number_type_name_via_id($number[1]);
 
-	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# Since only 1 field is utf8, we just call decode('utf-8', ...) below,
 	# rather than calling $self -> db -> library -> decode_list(...).
 
 	return
 	{
-		number    => decode('utf8', $number[0]),
+		number    => decode('utf-8', $number[0]),
 		type_id   => $number[1],
 		type_name => $name,
 	};

@@ -14,7 +14,7 @@
 
 <link rel="stylesheet" type="text/css" href="<: $fancy_table_css_url :>">
 <link rel="stylesheet" type="text/css" href="<: $jquery_ui_css_url :>">
-<link rel="stylesheet" type="text/css" href="<: $web_page_css_url :>">
+<link rel="stylesheet" type="text/css" href="<: $homepage_css_url :>">
 
 <style type="text/css">
 .button_like
@@ -68,6 +68,8 @@
 <div id="confirm_delete" style="display: none" title="Confirm Delete">Really delete this record and all associated records?</div>
 
 </body>
+<script type="text/javascript">$.uiBackCompat = false;</script>
+
 <script type="text/javascript" src="<: $jquery_js_url :>"></script>
 <script type="text/javascript" src="<: $jquery_ui_js_url :>"></script>
 <script type="text/javascript" src="<: $datatable_js_url :>"></script>

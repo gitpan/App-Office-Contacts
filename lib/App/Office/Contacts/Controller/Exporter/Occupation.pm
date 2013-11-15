@@ -3,9 +3,7 @@ package App::Office::Contacts::Controller::Exporter::Occupation;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use App::Office::Contacts::Util::Validator;
 
@@ -28,7 +26,7 @@ use Text::Xslate 'mark_raw';
 
 use Try::Tiny;
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -86,7 +84,7 @@ sub add_occupation
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf8', $response);
+	return encode('utf-8', $response);
 
 } # End of add_occupation.
 
@@ -146,7 +144,7 @@ sub add_staff
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf8', $response);
+	return encode('utf-8', $response);
 
 } # End of add_staff.
 
@@ -249,7 +247,7 @@ sub delete_occupation
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf8', $response);
+	return encode('utf-8', $response);
 
 } # End of delete_occupation.
 
@@ -316,7 +314,7 @@ sub delete_staff
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf8', $response);
+	return encode('utf-8', $response);
 
 } # End of delete_staff.
 
@@ -360,13 +358,13 @@ Each instance of this class is an L<App::Office::Contacts::Controller>-based obj
 
 This is a run mode for Occupation.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head2 add_staff()
 
 This is a run mode for Occupation.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head2 build_xml($type, $html)
 
@@ -380,13 +378,13 @@ Provides L<CGI::Snapp> with the list of run modes.
 
 This is a run mode for Occupation.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head2 delete_staff()
 
 This is a run mode for Occupation.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head1 FAQ
 

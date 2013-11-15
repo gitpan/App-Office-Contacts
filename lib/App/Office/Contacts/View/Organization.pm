@@ -3,9 +3,7 @@ package App::Office::Contacts::View::Organization;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use Moo;
 
@@ -13,7 +11,7 @@ use Text::Xslate 'mark_raw';
 
 extends 'App::Office::Contacts::View::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 

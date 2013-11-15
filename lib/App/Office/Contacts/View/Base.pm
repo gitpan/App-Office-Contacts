@@ -3,9 +3,7 @@ package App::Office::Contacts::View::Base;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use DateTime;
 
@@ -26,7 +24,7 @@ has view =>
 );
 
 my $email_phone_count = 4;
-our $VERSION          = '2.01';
+our $VERSION          = '2.02';
 
 # -----------------------------------------------
 
@@ -189,7 +187,7 @@ sub get_menu_data
 					|| die $self -> db -> simple -> error;
 	my(%data)   = $result -> map;
 
-	# Since we don't use utf8 in menus, so we don't need to call decode('utf8', ...).
+	# Since we don't use utf8 in menus, so we don't need to call decode('utf-8', ...).
 
 	return [map{ {key => $data{$_}, value => $_} } sort keys %data];
 

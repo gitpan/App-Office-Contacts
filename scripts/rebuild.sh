@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bu.perl.sh App-Office-Contacts x
+bu.perl.sh App-Office-Contacts
 
 perl Makefile.PL
 

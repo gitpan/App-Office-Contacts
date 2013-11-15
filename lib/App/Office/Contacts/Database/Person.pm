@@ -17,7 +17,7 @@ use Unicode::Collate;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # --------------------------------------------------
 
@@ -176,7 +176,7 @@ sub get_person_id_via_name
 	my($result) = $self -> db -> simple -> query('select id from people where upper_name = ?', uc $name)
 					|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -194,16 +194,16 @@ sub get_person_list
 	my($result) = $self -> db -> simple -> query('select name from people where id = ?', $id)
 					|| die $self -> db -> simple -> error;
 
-	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# Since only 1 field is utf8, we just call decode('utf-8', ...) below,
 	# rather than calling $self -> db -> library -> decode_list(...).
 	# And list() implies there is just 1 matching record.
 
 	my(@name) = $result -> list;
-	my($name) = $name[0] ? decode('utf8', $name[0]) : '';
+	my($name) = $name[0] ? decode('utf-8', $name[0]) : '';
 
 	# Filter out people with the same name but the 'wrong' id.
 
-	return $name ? [grep{$$_{id} == $id} @{$self -> get_people($user_id, encode('utf8', uc $name) )}] : [];
+	return $name ? [grep{$$_{id} == $id} @{$self -> get_people($user_id, encode('utf-8', uc $name) )}] : [];
 
 } # End of get_person_list.
 
@@ -359,8 +359,8 @@ sub save_person_record
 	my($data)                 = {};
 	$$data{$_}                = $$person{$_} for (@field);
 	$$data{deleted}           = 0;
-	$$data{upper_given_names} = encode('utf8', uc decode('utf8', $$data{given_names}) );
-	$$data{upper_name}        = encode('utf8', uc decode('utf8', $$data{name}) );
+	$$data{upper_given_names} = encode('utf-8', uc decode('utf-8', $$data{given_names}) );
+	$$data{upper_name}        = encode('utf-8', uc decode('utf-8', $$data{name}) );
 	$$data{date_of_birth}     = localstamp; # TODO.
 	$$data{timestamp}         = localstamp;
 	my($table_name)           = 'people';

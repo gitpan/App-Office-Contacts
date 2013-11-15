@@ -28,12 +28,13 @@ docs/contacts.schema.png
 docs/personal.details.png
 docs/search.results.png
 htdocs/assets/css/app/office/contacts/fancy.table.css
-htdocs/assets/css/app/office/contacts/web.page.css
+htdocs/assets/css/app/office/contacts/homepage.css
 htdocs/assets/templates/app/office/contacts/basic.column.tx
 htdocs/assets/templates/app/office/contacts/basic.table.tx
 htdocs/assets/templates/app/office/contacts/email.phone.tx
 htdocs/assets/templates/app/office/contacts/fancy.table.tx
 htdocs/assets/templates/app/office/contacts/faq.html
+htdocs/assets/templates/app/office/contacts/homepage.tx
 htdocs/assets/templates/app/office/contacts/menu.tx
 htdocs/assets/templates/app/office/contacts/note.tx
 htdocs/assets/templates/app/office/contacts/occupation.tx
@@ -42,9 +43,9 @@ htdocs/assets/templates/app/office/contacts/person.tx
 htdocs/assets/templates/app/office/contacts/report.tx
 htdocs/assets/templates/app/office/contacts/search.tx
 htdocs/assets/templates/app/office/contacts/staff.tx
+htdocs/assets/templates/app/office/contacts/standalone.page.tx
 htdocs/assets/templates/app/office/contacts/tab.tx
 htdocs/assets/templates/app/office/contacts/update.report.tx
-htdocs/assets/templates/app/office/contacts/web.page.tx
 httpd/cgi-bin/office/contacts.cgi
 httpd/cgi-bin/office/contacts.psgi
 inc/Module/Install.pm
@@ -109,6 +110,7 @@ scripts/create.tables.pl
 scripts/db.test.pl
 scripts/drop.tables.pl
 scripts/export.as.csv.pl
+scripts/export.as.html.pl
 scripts/find.config.pl
 scripts/pod2html4all.pl
 scripts/populate.db.sh

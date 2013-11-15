@@ -4,9 +4,7 @@ use parent 'CGI::Snapp';
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use Digest::SHA;
 
@@ -14,7 +12,7 @@ use Text::Xslate 'mark_raw';
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -76,6 +74,7 @@ sub build_web_page
 		demo_page_css_url     => $$config{demo_page_css_url},
 		demo_table_css_url    => $$config{demo_table_css_url},
 		fancy_table_css_url   => $$config{fancy_table_css_url},
+		homepage_css_url      => $$config{homepage_css_url},
 		html4about            => mark_raw($self -> build_about_html),
 		html4add_organization => mark_raw($self -> param('view') -> organization -> build_add_html),
 		html4add_person       => mark_raw($self -> param('view') -> person -> build_add_html),
@@ -85,10 +84,9 @@ sub build_web_page
 		jquery_js_url         => $$config{jquery_js_url},
 		jquery_ui_css_url     => $$config{jquery_ui_css_url},
 		jquery_ui_js_url      => $$config{jquery_ui_js_url},
-		web_page_css_url      => $$config{web_page_css_url},
 	};
 
-	return $self -> param('db') -> templater -> render('web.page.tx', $param);
+	return $self -> param('db') -> templater -> render('homepage.tx', $param);
 
 } # End of build_web_page.
 
@@ -324,13 +322,11 @@ that peson is updated as soon as they are added.
 The list of fields which support autocomplete are listed both on the appropriate forms and on the default
 FAQ page.
 
+=item o An add-on package supports importing vCards, as probably output by your email client
+
 =item o An add-on package supports donations per person and per organization
 
 But L<App::Office::Contacts::Donations> has not yet been updated to match V 2.00 of C<App::Office::Contacts>.
-
-=item o An add-on package supports importing vCards, as probably output by your email client
-
-But L<App::Office::Contacts::Import::vCards> has not yet been updated to match V 2.00 of C<App::Office::Contacts>.
 
 =back
 
@@ -646,7 +642,7 @@ L<App::Office::Contacts::Controller::Note> and
 L<App::Office::Contacts::Donations::Controller::Note>, could share a lot of code,
 but they had incompatible parents. Sub::Exporter solved this problem.
 
-It may happen that one day the code is restructured to solve this issue differently.
+And since Controller.pm is derived from CGI::Snapp and not Moo, we cannot use Moo::Role.
 
 =head2 In the source, it seems you use singular words for the names of arrays and array refs.
 
@@ -829,7 +825,7 @@ All scripts are shipped in the scripts/ directory.
 =item o check.org.cgi.fields.pl
 
 This compares the CGI form field names in the add_org_form CGI form to their equivalents in the
-Javascript in htdocs/assets/templates/app/office/contacts/web.page.tx, and reports discrepancies.
+Javascript in htdocs/assets/templates/app/office/contacts/homepage.tx, and reports discrepancies.
 
 The form is shipped in docs/add.organization.form.html which I copied from the web page displayed
 when the program starts.
@@ -855,6 +851,17 @@ This drops the database tables. See L</Creating and populating the database>.
 
 This exports just the name and upper-case name from the people table. This is not really useful,
 but does provide a template if you wish to expand the code.
+
+It outputs to the file specified by the output_file option.
+
+=item o export.as.html.pl
+
+This exports just the name and upper-case name from the people table. This is not really useful,
+but does provide a template if you wish to expand the code.
+
+It has a C<standalone_page> option for using either a web page or just a table as the template.
+
+It outputs a string.
 
 =item o find.config.pl
 

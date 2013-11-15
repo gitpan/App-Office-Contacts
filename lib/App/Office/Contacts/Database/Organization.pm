@@ -17,7 +17,7 @@ use Unicode::Collate;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # --------------------------------------------------
 
@@ -141,7 +141,7 @@ sub get_organization_id_via_name
 	my($result) = $self -> db -> simple -> query('select id from organizations where upper_name = ?', uc $name)
 		|| die $self -> db -> simple -> error;
 
-	# We don't call decode('utf8', ...) on integers.
+	# We don't call decode('utf-8', ...) on integers.
 	# And list() implies there is just 1 matching record.
 
 	return ($result -> list)[0] || 0;
@@ -158,7 +158,7 @@ sub get_organization_list
 
 	my($name) = $self -> get_organization_name($id);
 
-	return $name ? $self -> get_organizations($user_id, encode('utf8', uc $name) ) : [];
+	return $name ? $self -> get_organizations($user_id, encode('utf-8', uc $name) ) : [];
 
 } # End of get_organization_list.
 
@@ -177,10 +177,10 @@ sub get_organization_name
 
 	my(@name) = $result -> list;
 
-	# Since only 1 field is utf8, we just call decode('utf8', ...) below,
+	# Since only 1 field is utf8, we just call decode('utf-8', ...) below,
 	# rather than calling $self -> db -> library -> decode_list(...).
 
-	return $name[0] ? decode('utf8', $name[0]) : '';
+	return $name[0] ? decode('utf-8', $name[0]) : '';
 
 } # End of get_organization_name.
 
@@ -346,7 +346,7 @@ sub save_organization_record
 	$$data{$_}         = $$organization{$_} for (@field);
 	$$data{deleted}    = 0;
 	$$data{timestamp}  = localstamp;
-	$$data{upper_name} = encode('utf8', uc decode('utf8', $$data{name}) );
+	$$data{upper_name} = encode('utf-8', uc decode('utf-8', $$data{name}) );
 	my($table_name)    = 'organizations';
 
 	if ($context eq 'add')

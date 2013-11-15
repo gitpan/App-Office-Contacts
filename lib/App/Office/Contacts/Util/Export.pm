@@ -3,9 +3,7 @@ package App::Office::Contacts::Util::Export;
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use App::Office::Contacts::Database;
 
@@ -15,25 +13,39 @@ use Encode; # For decode().
 
 use Moo;
 
+use Text::CSV::Encoded;
 use Text::Xslate 'mark_raw';
+
+use Types::Standard qw/Int Str/;
 
 extends qw/App::Office::Contacts::Util::Logger App::Office::Contacts::Database::Base/;
 
-has whole_page =>
+has output_file =>
+(
+	default  => sub{return 0},
+	is       => 'rw',
+	isa      => Str,
+	required => 1,
+);
+
+has standalone_page =>
 (
 	default  => 0,
 	is       => 'rw',
-	isa      => 'Any',
+	isa      => Int,
 	required => 0,
 );
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
 sub BUILD
 {
 	my($self) = @_;
+
+	# We need this line as well as the 'required => 1' above,
+	# because the caller provides undef or something by default.
 
 	$self -> db
 	(
@@ -52,27 +64,33 @@ sub BUILD
 sub as_csv
 {
 	my($self) = @_;
+	my($csv)  = Text::CSV::Encoded -> new
+	({
+		always_quote => 1,
+		encoding_out => 'utf-8',
+	});
+	my($output_file) = $self -> output_file;
 
-	my(@row);
+	open(my $out, '>', $output_file) || die "Can't open(> $output_file): $!";
 
-	push @row,
-	[
-		'Name', 'Upper name',
-	];
+	$csv -> print($out, ['Name', 'Upper name']);
 
-	for my $person (@{$self -> read_people_table})
+	for my $item (@{$self -> read_people_table})
 	{
-		push @row,
+		$csv -> print($out,
 		[
-			$$person{name},
-			$$person{upper_name},
-		];
+			$$item{name},
+			$$item{upper_name},
+		]);
 	}
 
-	for (@row)
-	{
-		print '"', join('","', @$_), '"', "\n";
-	}
+	close($out);
+
+	print "Wrote $output_file. \n";
+
+	# Return 0 for success and 1 for failure.
+
+	return 0;
 
 }	# End of as_csv.
 
@@ -81,8 +99,48 @@ sub as_csv
 sub as_html
 {
 	my($self) = @_;
+	my($count) = 0;
 
-	return 'TODO';
+	my(@row);
+
+	push @row,
+	[
+	{td => '#'},
+	{td => 'Name'},
+	{td => 'Upper name'},
+	];
+
+	for my $item (@{$self -> read_people_table})
+	{
+		push @row,
+		[
+		{td => ++$count},
+		{td => $$item{name} },
+		{td => $$item{upper_name} },
+		];
+	}
+
+	push @row,
+	[
+	{td => '#'},
+	{td => 'Name'},
+	{td => 'Upper name'},
+	];
+
+	my($tx) = Text::Xslate -> new
+	(
+		input_layer => '',
+		path        => ${$self -> module_config}{template_path},
+	);
+
+	return $tx -> render
+	(
+		$self -> standalone_page ? 'standalone.page.tx' : 'basic.table.tx',
+		{
+			row     => \@row,
+			summary => 'A list of people',
+		}
+	);
 
 } # End of as_html.
 
@@ -99,8 +157,8 @@ sub read_people_table
 	{
 		push @person,
 		{
-			name       => decode('utf8', $$person{name}),
-			upper_name => decode('utf8', $$person{upper_name}),
+			name       => decode('utf-8', $$person{name}),
+			upper_name => decode('utf-8', $$person{upper_name}),
 		};
 	}
 

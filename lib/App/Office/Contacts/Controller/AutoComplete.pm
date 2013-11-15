@@ -4,9 +4,7 @@ use parent 'App::Office::Contacts::Controller';
 use strict;
 use utf8;
 use warnings;
-use warnings  qw(FATAL utf8);    # Fatalize encoding glitches.
-use open      qw(:std :utf8);    # Undeclared streams in UTF-8.
-use charnames qw(:full :short);  # Unneeded in v5.16.
+use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use JSON::XS;
 
@@ -14,7 +12,7 @@ use Try::Tiny;
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 # -----------------------------------------------
 
@@ -114,7 +112,7 @@ Each instance of this class is an L<App::Office::Contacts::Controller>-based obj
 
 This methods finds records matching the keystrokes sent as Ajax requests.
 
-See htdocs/assets/templates/app/office/contacts/web.page.tx for the calling code.
+See htdocs/assets/templates/app/office/contacts/homepage.tx for the calling code.
 
 =head1 FAQ
 

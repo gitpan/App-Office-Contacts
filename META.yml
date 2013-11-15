@@ -63,4 +63,4 @@ requires:
   warnings: 0
 resources:
   license: http://opensource.org/licenses/artistic-license-2.0.php
-version: 2.01
+version: 2.02
