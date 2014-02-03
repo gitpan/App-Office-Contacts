@@ -6,7 +6,7 @@ use App::Office::Contacts::Controller::Exporter::Person qw/-all/;
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 

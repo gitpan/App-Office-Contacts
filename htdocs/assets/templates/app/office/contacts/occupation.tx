@@ -2,10 +2,10 @@
 
 <table align="center">
 	<tr>
-		<td colspan="2"><div class="blue_centered">Occupations for <: $name :></div></td>
+		<td align="center" colspan="2"><span class="blue_centered">Occupations for <: $name :></span></td>
 	</tr>
 	<tr>
-		<td colspan="2"><div id="occ_list_div"><: $occupation_list :></div></td>
+		<td colspan="2"><span id="occ_list_div"><: $occupation_list :></span></td>
 	</tr>
 	<tr>
 		<td colspan="2"><hr></td>
@@ -20,7 +20,7 @@
 	</tr>
 	<tr>
 		<td align="center"><span id="add_occ_button">Add</span></td>
-		<td align="center"><span class="button_like"><input id="reset_occ_button" type="reset" value="Reset"></span></td>
+		<td align="center"><input id="reset_occ_button" type="reset" value="Reset"></td>
 	</tr>
 </table>
 
@@ -38,6 +38,6 @@
 		<td>2: And, for either field, you can type 2 or more characters to trigger auto-completion.</td>
 	</tr>
 	<tr>
-		<td>This means a menu of matches from the database, if any, will be displayed.</td>
+		<td>This means a menu of database matches, if any, will be displayed.</td>
 	</tr>
 </table>

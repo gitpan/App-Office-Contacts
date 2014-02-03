@@ -13,7 +13,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -241,7 +241,7 @@ sub save_email_address_for_organization
 
 	if ($id == 0)
 	{
-		$id = $self -> db -> library -> insert_hash_get_id($table_name, $email);
+		$id = $self -> db -> library -> insert_hashref_get_id($table_name, $email);
 	}
 
 	$table_name               = 'email_organizations';
@@ -273,7 +273,7 @@ sub save_email_address_for_person
 
 	if ($id == 0)
 	{
-		$id = $self -> db -> library -> insert_hash_get_id($table_name, $email);
+		$id = $self -> db -> library -> insert_hashref_get_id($table_name, $email);
 	}
 
 	$table_name               = 'email_people';

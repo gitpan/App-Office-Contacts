@@ -15,7 +15,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -183,7 +183,7 @@ sub get_role_via_id
 
 # -----------------------------------------------
 
-sub insert_hash_get_id
+sub insert_hashref_get_id
 {
 	my($self, $table_name, $hashref) = @_;
 
@@ -192,7 +192,7 @@ sub insert_hash_get_id
 
 	return $self -> db -> simple -> last_insert_id(undef, undef, $table_name, undef);
 
-} # End of insert_hash_get_id.
+} # End of insert_hashref_get_id.
 
 # --------------------------------------------------
 
@@ -326,7 +326,7 @@ Returns a hashref in the form {$name => $id, ...}.
 
 Returns the name of the role with the given $id.
 
-=head2 insert_hash_get_id($table_name, $hashref)
+=head2 insert_hashref_get_id($table_name, $hashref)
 
 Inserts $hashref into $table_name, and returns the id of the new record.
 

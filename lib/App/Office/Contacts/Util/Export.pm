@@ -6,6 +6,7 @@ use warnings;
 use warnings  qw(FATAL utf8); # Fatalize encoding glitches.
 
 use App::Office::Contacts::Database;
+use App::Office::Contacts::Util::Logger;
 
 use CGI;
 
@@ -16,13 +17,21 @@ use Moo;
 use Text::CSV::Encoded;
 use Text::Xslate 'mark_raw';
 
-use Types::Standard qw/Int Str/;
+use Types::Standard qw/Any Bool Str/;
 
-extends qw/App::Office::Contacts::Util::Logger App::Office::Contacts::Database::Base/;
+extends 'App::Office::Contacts::Database::Base';
+
+has logger =>
+(
+	default  => sub{return 0},
+	is       => 'rw',
+	isa      => Any, # 'App::Office::Contacts::Util::Logger',
+	required => 0,
+);
 
 has output_file =>
 (
-	default  => sub{return 0},
+	default  => sub{return ''},
 	is       => 'rw',
 	isa      => Str,
 	required => 1,
@@ -30,13 +39,13 @@ has output_file =>
 
 has standalone_page =>
 (
-	default  => 0,
+	default  => sub{return 0},
 	is       => 'rw',
-	isa      => Int,
+	isa      => Bool,
 	required => 0,
 );
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -44,15 +53,17 @@ sub BUILD
 {
 	my($self) = @_;
 
-	# We need this line as well as the 'required => 1' above,
-	# because the caller provides undef or something by default.
+	# Fix value if undef is passed in.
+	# This happens with Getopt::Long when the option /name/ is not provided on the command line.
 
+	$self -> standalone_page($self -> standalone_page || 0);
+	$self -> logger(App::Office::Contacts::Util::Logger -> new);
 	$self -> db
 	(
 		App::Office::Contacts::Database -> new
 		(
 			logger        => $self -> logger,
-			module_config => $self -> module_config,
+			module_config => $self -> logger -> module_config,
 			query         => CGI -> new,
 		)
 	);
@@ -64,6 +75,9 @@ sub BUILD
 sub as_csv
 {
 	my($self) = @_;
+
+	die "No output file specified\n" if (! $self -> output_file);
+
 	my($csv)  = Text::CSV::Encoded -> new
 	({
 		always_quote => 1,
@@ -101,6 +115,8 @@ sub as_html
 	my($self) = @_;
 	my($count) = 0;
 
+	$self -> logger -> log(info => 'Generating HTML table. standalone_page: ' . $self -> standalone_page);
+
 	my(@row);
 
 	push @row,
@@ -130,7 +146,7 @@ sub as_html
 	my($tx) = Text::Xslate -> new
 	(
 		input_layer => '',
-		path        => ${$self -> module_config}{template_path},
+		path        => ${$self -> logger -> module_config}{template_path},
 	);
 
 	return $tx -> render

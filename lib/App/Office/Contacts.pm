@@ -12,7 +12,7 @@ use Text::Xslate 'mark_raw';
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -81,9 +81,6 @@ sub build_web_page
 		html4error            => mark_raw($self -> build_error_html),
 		html4report           => mark_raw($self -> param('view') -> report -> build_report_html),
 		html4search           => mark_raw($self -> param('view') -> search -> build_search_html),
-		jquery_js_url         => $$config{jquery_js_url},
-		jquery_ui_css_url     => $$config{jquery_ui_css_url},
-		jquery_ui_js_url      => $$config{jquery_ui_js_url},
 	};
 
 	return $self -> param('db') -> templater -> render('homepage.tx', $param);

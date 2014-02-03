@@ -12,7 +12,7 @@ use App::Office::Contacts::View;
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 

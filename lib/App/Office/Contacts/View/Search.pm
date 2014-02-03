@@ -9,7 +9,7 @@ use Moo;
 
 extends 'App::Office::Contacts::View::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 

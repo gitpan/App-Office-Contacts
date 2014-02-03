@@ -2,7 +2,7 @@
 
 <table align="center">
 	<tr>
-		<td colspan="6"><div class="blue_centered"><: $ucfirst_context :> Person</div></td>
+		<td align="center" colspan="6"><span class="blue_centered"><: $ucfirst_context :> Person</span></td>
 	</tr>
 	<tr>
 		<td>Given names</td><td><input type="text" id="<: $context :>_person_given_names" size="40" value="<: $given_names :>"></td>
@@ -43,7 +43,7 @@
 		: if $context == "update" {
 		<td align="center"><span id="delete_person_button">Delete</span></td>
 		: }
-		<td align="center"><span class="button_like"><input id="reset_<: $context :>_person_button" type="reset" value="Reset"></span></td>
+		<td align="center"><input id="reset_<: $context :>_person_button" type="reset" value="Reset"></td>
 	</tr>
 </table>
 

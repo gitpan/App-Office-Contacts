@@ -24,7 +24,7 @@ use Sub::Exporter -setup =>
 
 use Try::Tiny;
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -217,7 +217,7 @@ sub display
 		$response = $self -> param('system_error');
 	};
 
-	return encode('utf-8', $response);
+	return encode('utf8', $response);
 
 } # End of display.
 

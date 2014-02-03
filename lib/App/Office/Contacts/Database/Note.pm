@@ -13,7 +13,7 @@ use Moo;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -66,7 +66,7 @@ sub save_note_record
 
 	if ($context eq 'add')
 	{
-		$$note{id} = $self -> db -> library -> insert_hash_get_id($table_name, $note);
+		$$note{id} = $self -> db -> library -> insert_hashref_get_id($table_name, $note);
 	}
 	else
 	{

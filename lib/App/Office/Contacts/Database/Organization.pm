@@ -17,7 +17,7 @@ use Unicode::Collate;
 
 extends 'App::Office::Contacts::Database::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # --------------------------------------------------
 
@@ -351,7 +351,7 @@ sub save_organization_record
 
 	if ($context eq 'add')
 	{
-		$$organization{id} = $$data{id} = $self -> db -> library -> insert_hash_get_id($table_name, $data);
+		$$organization{id} = $$data{id} = $self -> db -> library -> insert_hashref_get_id($table_name, $data);
 	}
 	else
 	{

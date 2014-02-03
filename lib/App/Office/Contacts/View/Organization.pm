@@ -11,7 +11,7 @@ use Text::Xslate 'mark_raw';
 
 extends 'App::Office::Contacts::View::Base';
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 
@@ -109,7 +109,7 @@ sub build_tab_html
 		'tab.tx',
 		{
 			list => [@tab],
-			div  => 'update_org_tab',
+			div  => 'update_org_div',
 		}
 	);
 

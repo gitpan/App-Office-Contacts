@@ -5,7 +5,7 @@ use warnings;
 
 use Getopt::Long;
 
-use App::Office::Database::Export;
+use App::Office::Contacts::Util::Export;
 
 # -------------------------------
 
@@ -17,12 +17,12 @@ if ($option_parser -> getoptions
 (
  \%option,
  'help',
- 'standalone_page',
+ 'standalone_page:i',
 ) )
 {
 	pod2usage(1) if ($option{'help'});
 
-	print App::Office::Database::Export -> new(standalone_page => $option{standalone_page}) -> as_html;
+	print App::Office::Contacts::Util::Export -> new(%option) -> as_html;
 
 	exit 0;
 }

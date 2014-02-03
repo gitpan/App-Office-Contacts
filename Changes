@@ -1,5 +1,11 @@
 Revision history for Perl extension App::Office::Contacts.
 
+2.03  Thu Jan 23 10:36:00 2014
+	- Switch from bareword file handles to lexically-named file handles. This stops these types of msgs:
+		Use of bareword filehandle in open at lib/App/Office/Contacts/Database/Library.pm line 74.
+	- Not that I don't use the JS '$.uiBackCompat = false;', I had to re-write some of the JS to not use
+		obsolete features of jQuery UI.
+
 2.02  Thu Nov 13 15:11:00 2013
 	- Replace decode/encode('utf8', $x) with decode/encode('utf-8', $x).
 	- Remove:

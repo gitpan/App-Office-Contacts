@@ -26,7 +26,7 @@ use Text::Xslate 'mark_raw';
 
 use Try::Tiny;
 
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 # -----------------------------------------------
 

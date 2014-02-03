@@ -10,8 +10,6 @@ make install
 
 make dist
 
-scripts/populate.db.sh
-
-mv App-Office-Contacts-2.00.tar.gz ~/savage.net.au/Perl-modules
+mv App-Office-Contacts-2.03.tar.gz ~/savage.net.au/Perl-modules
 
 gss
