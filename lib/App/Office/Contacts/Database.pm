@@ -132,7 +132,7 @@ has templater =>
 	required => 0,
 );
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 

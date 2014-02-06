@@ -9,7 +9,7 @@ use Moo::Role;
 
 use Text::Xslate 'mark_raw';
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 

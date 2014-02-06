@@ -24,7 +24,7 @@ has view =>
 );
 
 my $email_phone_count = 4;
-our $VERSION          = '2.03';
+our $VERSION          = '2.04';
 
 # -----------------------------------------------
 

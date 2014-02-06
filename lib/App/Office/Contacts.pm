@@ -12,7 +12,7 @@ use Text::Xslate 'mark_raw';
 
 # We don't use Moo because we isa CGI::Snapp.
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 
@@ -589,6 +589,16 @@ Yes. L<Text::CSV::Encoded> is used in C<App::Office::Contacts::Util::Import> to 
 See L</Creating and populating the database> for a discussion of scripts/populate.fake.people.pl.
 
 Do a search for Brocard, the author of the original L<GraphViz>, and you will find LE<233>on Brocard.
+
+Also, see lines 48 .. 52 in the config file for options to control the utf8 setting in the connect() attributes
+as used by L<DBI>. These are the defaults:
+
+	mysql_enable_utf8 = 1
+	# pg_enable_utf8 == 0 for DBD::Pg V 3.0.0 in my code.
+	pg_enable_utf8    = 0
+	sqlite_unicode    = 1
+
+These values are used in App::Office::Contacts::Util::Logger lines 44 .. 57.
 
 =head2 Why not allow multiple Facebook and Twitter tags per org or person?
 

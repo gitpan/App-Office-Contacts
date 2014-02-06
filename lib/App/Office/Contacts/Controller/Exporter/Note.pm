@@ -23,7 +23,7 @@ use Sub::Exporter -setup =>
 
 use Try::Tiny;
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 

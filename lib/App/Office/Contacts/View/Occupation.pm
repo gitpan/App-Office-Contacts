@@ -11,7 +11,7 @@ use Text::Xslate 'mark_raw';
 
 extends 'App::Office::Contacts::View::Base';
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 

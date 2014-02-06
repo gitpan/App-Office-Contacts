@@ -28,7 +28,7 @@ has simple =>
 	required => 0,
 );
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 
 # -----------------------------------------------
 
@@ -41,7 +41,20 @@ sub BUILD
 		AutoCommit => defined($$config{AutoCommit}) ? $$config{AutoCommit} : 1,
 		RaiseError => defined($$config{RaiseError}) ? $$config{RaiseError} : 1,
 	};
-	$$attr{sqlite_unicode} = 1 if ( ($$config{dsn} =~ /SQLite/i) && $$config{sqlite_unicode});
+	my(%driver) =
+	(
+		mysql_enable_utf8 => qr/dbi:MySQL/i,
+		pg_enable_utf8    => qr/dbi:Pg/i,
+		sqlite_unicode    => qr/dbi:SQLite/i,
+	);
+
+	for my $db (keys %driver)
+	{
+		if ($$config{dsn} =~ $driver{$db})
+		{
+			$$attr{$db} = defined($$config{$db}) ? $$config{$db} : 1;
+		}
+	}
 
 	$self -> simple(DBIx::Simple -> connect($$config{dsn}, $$config{username}, $$config{password}, $attr) );
 	$self -> simple -> query('PRAGMA foreign_keys = ON') if ($$config{dsn} =~ /SQLite/i);
